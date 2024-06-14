@@ -1,23 +1,11 @@
 export interface DataWrapper<T = object> {
-  data: T[];
+  data: T;
   generated_timestamp: string;
   type: string;
   version: string;
 }
 
-export interface CitybusRoute {
-  co: string;
-  data_timestamp: string;
-  dest_en: string;
-  dest_sc: string;
-  dest_tc: string;
-  orig_en: string;
-  orig_sc: string;
-  orig_tc: string;
-  route: string;
-}
-
-export interface KmbRoute {
+export interface RouteV1 {
   bound: string;
   dest_en: string;
   dest_sc: string;
@@ -29,7 +17,27 @@ export interface KmbRoute {
   service_type: string;
 }
 
-export interface RouteStop {
+export interface RouteV2 {
+  co: string;
+  data_timestamp: string;
+  dest_en: string;
+  dest_sc: string;
+  dest_tc: string;
+  orig_en: string;
+  orig_sc: string;
+  orig_tc: string;
+  route: string;
+}
+
+export interface RouteStopV1 {
+  route: string;
+  bound: string;
+  service_type: string;
+  seq: string;
+  stop: string;
+}
+
+export interface RouteStopV2 {
   co: string;
   data_timestamp: string;
   dir: string;

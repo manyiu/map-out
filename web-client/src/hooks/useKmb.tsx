@@ -1,15 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { dbName } from "../repositories/indexedDb";
-import { DataWrapper, KmbRoute, Stop } from "./types";
+import worker from "../workers";
+import { DataWrapper, RouteStopV1, RouteV1, Stop } from "./types";
 
 const useKmb = () => {
-  const {
-    data: routeData,
-    isLoading,
-    error,
-  } = useQuery({
+  useQuery({
     queryKey: ["/kmb/route"],
-    queryFn: async (): Promise<DataWrapper<KmbRoute>> => {
+    queryFn: async (): Promise<DataWrapper<RouteV1[]>> => {
       const response = await fetch(
         "https://data.etabus.gov.hk/v1/transport/kmb/route"
       );
@@ -18,27 +14,46 @@ const useKmb = () => {
         throw new Error("Failed to fetch /v1/transport/kmb/route");
       }
 
-      return response.json();
+      const responseJson = (await response.json()) as DataWrapper<RouteV1[]>;
+
+      worker.postMessage({
+        type: "route-v1",
+        data: responseJson.data,
+      });
+
+      return responseJson;
     },
-    staleTime: Infinity,
+    // staleTime: Infinity,
   });
 
-  if (routeData) {
-    const request = indexedDB.open(dbName, 1);
+  useQuery({
+    queryKey: ["/kmb/route-stop"],
+    queryFn: async (): Promise<DataWrapper<RouteStopV1[]>> => {
+      const response = await fetch(
+        "https://data.etabus.gov.hk/v1/transport/kmb/route-stop"
+      );
 
-    request.onsuccess = () => {
-      const transaction = request.result.transaction("routes-v1", "readwrite");
-      const objectStore = transaction.objectStore("routes-v1");
+      if (!response.ok) {
+        throw new Error("Failed to fetch /v1/transport/kmb/route-stop");
+      }
 
-      routeData.data.forEach((route) => {
-        objectStore.put(route);
+      const responseJson = (await response.json()) as DataWrapper<
+        RouteStopV1[]
+      >;
+
+      worker.postMessage({
+        type: "route-stop-v1",
+        data: responseJson.data,
       });
-    };
-  }
 
-  const { data: stopData } = useQuery({
+      return responseJson;
+    },
+    // staleTime: Infinity,
+  });
+
+  useQuery({
     queryKey: ["/kmb/stop"],
-    queryFn: async (): Promise<DataWrapper<Stop>> => {
+    queryFn: async (): Promise<DataWrapper<Stop[]>> => {
       const response = await fetch(
         "https://data.etabus.gov.hk/v1/transport/kmb/stop"
       );
@@ -47,25 +62,17 @@ const useKmb = () => {
         throw new Error("Failed to fetch /v1/transport/kmb/stop");
       }
 
-      return response.json();
-    },
-    staleTime: Infinity,
-  });
+      const responseJson = (await response.json()) as DataWrapper<Stop[]>;
 
-  if (stopData) {
-    const request = indexedDB.open(dbName, 1);
-
-    request.onsuccess = () => {
-      const transaction = request.result.transaction("stops", "readwrite");
-      const objectStore = transaction.objectStore("stops");
-
-      stopData.data.forEach((stop) => {
-        objectStore.put(stop);
+      worker.postMessage({
+        type: "stop",
+        data: responseJson.data,
       });
-    };
-  }
 
-  return { data: routeData?.data, isLoading, error };
+      return responseJson;
+    },
+    // staleTime: Infinity,
+  });
 };
 
 export default useKmb;

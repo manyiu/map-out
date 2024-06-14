@@ -6,13 +6,7 @@ import App from "./App.tsx";
 import "./repositories/indexedDb.ts";
 import { persister, queryClient } from "./repositories/queryClient";
 import theme from "./theme.ts";
-
-const worker = new Worker(new URL("./workers/sqlite.js", import.meta.url), {
-  type: "module",
-});
-worker.onmessage = (e) => {
-  console.log("Message received from worker", e.data);
-};
+import "./workers";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

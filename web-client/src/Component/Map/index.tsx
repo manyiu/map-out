@@ -6,15 +6,22 @@ import {
   TileLayer,
   useMapEvents,
 } from "react-leaflet";
+import worker from "../../workers";
 import { MapProps, SourceAttribution, SourceUrl } from "./types";
 
-const MyComponent = () => {
+const Spy = () => {
   const map = useMapEvents({
     moveend: () => {
-      console.log("Map new bounds: ", map.getBounds());
+      worker.postMessage({
+        type: "map-bounds",
+        data: map.getBounds(),
+      });
     },
     zoomend: () => {
-      console.log("Map new bounds: ", map.getBounds());
+      worker.postMessage({
+        type: "map-bounds",
+        data: map.getBounds(),
+      });
     },
   });
 
@@ -36,7 +43,7 @@ const Map = (props: MapProps) => {
       zoom={props.zoom}
       scrollWheelZoom={"center"}
     >
-      <MyComponent />
+      <Spy />
       <TileLayer
         attribution={SourceAttribution[props.source]}
         url={SourceUrl[props.source]}

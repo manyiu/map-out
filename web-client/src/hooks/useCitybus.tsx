@@ -1,43 +1,34 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { dbName } from "../repositories/indexedDb";
-import { CitybusRoute, DataWrapper, RouteStop, Stop } from "./types";
+import worker from "../workers";
+import { DataWrapper, RouteStopV2, RouteV2, Stop } from "./types";
 
 const useCitybus = () => {
   const { data: routeData } = useQuery({
     queryKey: ["/citybus/route/ctb"],
-    queryFn: async (): Promise<DataWrapper<CitybusRoute>> => {
+    queryFn: async (): Promise<DataWrapper<RouteV2[]>> => {
       const response = await fetch(
         "https://rt.data.gov.hk/v2/transport/citybus/route/ctb"
       );
-      return response.json();
+
+      const responseJson = await response.json();
+
+      worker.postMessage({
+        type: "route-v2",
+        data: responseJson.data,
+      });
+
+      return responseJson;
     },
     staleTime: Infinity,
   });
 
-  if (routeData) {
-    const request = indexedDB.open(dbName, 1);
-
-    request.onsuccess = () => {
-      const transaction = request.result.transaction("routes-v2", "readwrite");
-      const objectStore = transaction.objectStore("routes-v2");
-
-      routeData.data.forEach((route) => {
-        objectStore.put(route);
-      });
-    };
-  }
-
-  const {
-    data: routeStopData,
-    isLoading,
-    error,
-  } = useQueries({
+  const { data: routeStopData } = useQueries({
     queries:
       [
         ...(routeData?.data.map(({ co, route }) => {
           return {
             queryKey: ["/citybus/route-stop/", co, route],
-            queryFn: async (): Promise<DataWrapper<RouteStop>> => {
+            queryFn: async (): Promise<DataWrapper<RouteStopV2[]>> => {
               const response = await fetch(
                 `https://rt.data.gov.hk/v2/transport/citybus/route-stop/${co}/${route}/inbound`
               );
@@ -48,7 +39,16 @@ const useCitybus = () => {
                 );
               }
 
-              return response.json();
+              const responseJson = (await response.json()) as DataWrapper<
+                RouteStopV2[]
+              >;
+
+              worker.postMessage({
+                type: "route-stop-v2",
+                data: responseJson.data,
+              });
+
+              return responseJson;
             },
             staleTime: Infinity,
           };
@@ -56,7 +56,7 @@ const useCitybus = () => {
         ...(routeData?.data.map(({ co, route }) => {
           return {
             queryKey: ["/citybus/route-stop/", co, route],
-            queryFn: async (): Promise<DataWrapper<RouteStop>> => {
+            queryFn: async (): Promise<DataWrapper<RouteStopV2[]>> => {
               const response = await fetch(
                 `https://rt.data.gov.hk/v2/transport/citybus/route-stop/${co}/${route}/outbound`
               );
@@ -67,7 +67,16 @@ const useCitybus = () => {
                 );
               }
 
-              return response.json();
+              const responseJson = (await response.json()) as DataWrapper<
+                RouteStopV2[]
+              >;
+
+              worker.postMessage({
+                type: "route-stop-v2",
+                data: responseJson.data,
+              });
+
+              return responseJson;
             },
             staleTime: Infinity,
           };
@@ -101,7 +110,7 @@ const useCitybus = () => {
     }
   }
 
-  const { data: stopData } = useQueries({
+  useQueries({
     queries: stopList.map((stop) => {
       return {
         queryKey: ["/citybus/stop/", stop],
@@ -116,7 +125,14 @@ const useCitybus = () => {
             );
           }
 
-          return response.json();
+          const responseJson = (await response.json()) as DataWrapper<Stop>;
+
+          worker.postMessage({
+            type: "stop",
+            data: [responseJson.data],
+          });
+
+          return responseJson;
         },
         staleTime: Infinity,
       };
@@ -130,26 +146,6 @@ const useCitybus = () => {
       };
     },
   });
-
-  if (stopData) {
-    const request = indexedDB.open(dbName, 1);
-
-    request.onsuccess = () => {
-      const transaction = request.result.transaction("stops", "readwrite");
-      const objectStore = transaction.objectStore("stops");
-
-      stopData.forEach((stop) => {
-        try {
-          objectStore.put(stop);
-        } catch (error) {
-          console.error("Failed to put stop into indexedDB", error);
-          console.log("stop", stop);
-        }
-      });
-    };
-  }
-
-  return { data: stopData, isLoading, error: error?.error };
 };
 
 export default useCitybus;
