@@ -6,6 +6,7 @@ import {
   TileLayer,
   useMapEvents,
 } from "react-leaflet";
+import useNearBy from "../../hooks/useNearBy";
 import worker from "../../workers";
 import { MapProps, SourceAttribution, SourceUrl } from "./types";
 
@@ -29,6 +30,8 @@ const Spy = () => {
 };
 
 const Map = (props: MapProps) => {
+  const { stop } = useNearBy();
+
   if (!props.position) {
     return null;
   }
@@ -56,6 +59,11 @@ const Map = (props: MapProps) => {
       >
         <Popup>Current Location</Popup>
       </Marker>
+      {stop.map((stop) => (
+        <Marker key={stop.id} position={[stop.lat, stop.long]}>
+          <Popup>{stop.name_en}</Popup>
+        </Marker>
+      ))}
     </MapContainer>
   );
 };

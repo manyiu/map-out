@@ -23,7 +23,7 @@ const useKmb = () => {
 
       return responseJson;
     },
-    // staleTime: Infinity,
+    staleTime: Infinity,
   });
 
   useQuery({
@@ -48,7 +48,7 @@ const useKmb = () => {
 
       return responseJson;
     },
-    // staleTime: Infinity,
+    staleTime: Infinity,
   });
 
   useQuery({
@@ -71,7 +71,7 @@ const useKmb = () => {
 
       return responseJson;
     },
-    // staleTime: Infinity,
+    staleTime: Infinity,
   });
 };
 

@@ -55,3 +55,12 @@ export interface Stop {
   name_tc: string;
   stop: string;
 }
+
+export interface StopDb {
+  id: string;
+  lat: number;
+  long: number;
+  name_en: string;
+  name_sc: string;
+  name_tc: string;
+}

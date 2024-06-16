@@ -7,8 +7,8 @@ import useKmb from "./hooks/useKmb";
 
 function App() {
   const { position } = useGeolocation();
-  useCitybus();
   useKmb();
+  useCitybus();
 
   return (
     <Container width="100%" maxWidth="100dvw" padding={0}>
