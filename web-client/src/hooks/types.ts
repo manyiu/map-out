@@ -5,7 +5,7 @@ export interface DataWrapper<T = object> {
   version: string;
 }
 
-export interface RouteV1 {
+export interface RouteKmb {
   bound: string;
   dest_en: string;
   dest_sc: string;
@@ -17,7 +17,7 @@ export interface RouteV1 {
   service_type: string;
 }
 
-export interface RouteV2 {
+export interface RouteCitybus {
   co: string;
   data_timestamp: string;
   dest_en: string;
@@ -29,15 +29,15 @@ export interface RouteV2 {
   route: string;
 }
 
-export interface RouteStopV1 {
-  route: string;
+export interface RouteStopKmb {
   bound: string;
-  service_type: string;
+  route: string;
   seq: string;
+  service_type: string;
   stop: string;
 }
 
-export interface RouteStopV2 {
+export interface RouteStopCitybus {
   co: string;
   data_timestamp: string;
   dir: string;
@@ -46,7 +46,16 @@ export interface RouteStopV2 {
   stop: string;
 }
 
-export interface Stop {
+export interface StopKmb {
+  lat: string;
+  long: string;
+  name_en: string;
+  name_sc: string;
+  name_tc: string;
+  stop: string;
+}
+
+export interface StopCitybus {
   data_timestamp: string;
   lat: string;
   long: string;

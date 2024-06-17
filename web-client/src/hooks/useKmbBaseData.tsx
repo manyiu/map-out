@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import worker from "../workers";
-import { DataWrapper, RouteStopV1, RouteV1, Stop } from "./types";
+import { DataWrapper, RouteKmb, RouteStopKmb, StopKmb } from "./types";
 
-const useKmb = () => {
-  useQuery({
+const ONE_WEEK = 1000 * 60 * 60 * 24 * 7;
+
+const useKmbBaseData = () => {
+  const { isLoading: routeIsLoading, error: routeError } = useQuery({
     queryKey: ["/kmb/route"],
-    queryFn: async (): Promise<DataWrapper<RouteV1[]>> => {
+    queryFn: async (): Promise<DataWrapper<RouteKmb[]>> => {
       const response = await fetch(
         "https://data.etabus.gov.hk/v1/transport/kmb/route"
       );
@@ -14,21 +16,21 @@ const useKmb = () => {
         throw new Error("Failed to fetch /v1/transport/kmb/route");
       }
 
-      const responseJson = (await response.json()) as DataWrapper<RouteV1[]>;
+      const responseJson = (await response.json()) as DataWrapper<RouteKmb[]>;
 
       worker.postMessage({
-        type: "route-v1",
+        type: "save::route-kmb",
         data: responseJson.data,
       });
 
       return responseJson;
     },
-    staleTime: Infinity,
+    staleTime: ONE_WEEK,
   });
 
-  useQuery({
+  const { isLoading: routeStopIsLoading, error: routeStopError } = useQuery({
     queryKey: ["/kmb/route-stop"],
-    queryFn: async (): Promise<DataWrapper<RouteStopV1[]>> => {
+    queryFn: async (): Promise<DataWrapper<RouteStopKmb[]>> => {
       const response = await fetch(
         "https://data.etabus.gov.hk/v1/transport/kmb/route-stop"
       );
@@ -38,22 +40,22 @@ const useKmb = () => {
       }
 
       const responseJson = (await response.json()) as DataWrapper<
-        RouteStopV1[]
+        RouteStopKmb[]
       >;
 
       worker.postMessage({
-        type: "route-stop-v1",
+        type: "save::route-stop-kmb",
         data: responseJson.data,
       });
 
       return responseJson;
     },
-    staleTime: Infinity,
+    staleTime: ONE_WEEK,
   });
 
-  useQuery({
+  const { isLoading: stopIsLoading, error: stopError } = useQuery({
     queryKey: ["/kmb/stop"],
-    queryFn: async (): Promise<DataWrapper<Stop[]>> => {
+    queryFn: async (): Promise<DataWrapper<StopKmb>> => {
       const response = await fetch(
         "https://data.etabus.gov.hk/v1/transport/kmb/stop"
       );
@@ -62,17 +64,22 @@ const useKmb = () => {
         throw new Error("Failed to fetch /v1/transport/kmb/stop");
       }
 
-      const responseJson = (await response.json()) as DataWrapper<Stop[]>;
+      const responseJson = (await response.json()) as DataWrapper<StopKmb>;
 
       worker.postMessage({
-        type: "stop",
+        type: "save::stop-kmb",
         data: responseJson.data,
       });
 
       return responseJson;
     },
-    staleTime: Infinity,
+    staleTime: ONE_WEEK,
   });
+
+  return {
+    isLoading: routeIsLoading || routeStopIsLoading || stopIsLoading,
+    error: routeError || routeStopError || stopError,
+  };
 };
 
-export default useKmb;
+export default useKmbBaseData;

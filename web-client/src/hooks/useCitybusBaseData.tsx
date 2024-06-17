@@ -1,11 +1,24 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
+import pLimit from "p-limit";
 import worker from "../workers";
-import { DataWrapper, RouteStopV2, RouteV2, Stop } from "./types";
+import {
+  DataWrapper,
+  RouteCitybus,
+  RouteStopCitybus,
+  StopCitybus,
+} from "./types";
 
-const useCitybus = () => {
-  const { data: routeData } = useQuery({
+const limit = pLimit(10);
+const ONE_WEEK = 1000 * 60 * 60 * 24 * 7;
+
+const useCitybusBaseData = () => {
+  const {
+    data: routeData,
+    isLoading: routeIsLoading,
+    error: routeError,
+  } = useQuery({
     queryKey: ["/citybus/route/ctb"],
-    queryFn: async (): Promise<DataWrapper<RouteV2[]>> => {
+    queryFn: async (): Promise<DataWrapper<RouteCitybus[]>> => {
       const response = await fetch(
         "https://rt.data.gov.hk/v2/transport/citybus/route/ctb"
       );
@@ -13,24 +26,30 @@ const useCitybus = () => {
       const responseJson = await response.json();
 
       worker.postMessage({
-        type: "route-v2",
+        type: "save::route-citybus",
         data: responseJson.data,
       });
 
       return responseJson;
     },
-    staleTime: Infinity,
+    staleTime: ONE_WEEK,
   });
 
-  const { data: routeStopData } = useQueries({
+  const {
+    data: routeStopData,
+    isLoading: routeStopIsLoading,
+    error: routeStopError,
+  } = useQueries({
     queries:
       [
         ...(routeData?.data.map(({ co, route }) => {
           return {
             queryKey: ["/citybus/route-stop/", co, route],
-            queryFn: async (): Promise<DataWrapper<RouteStopV2[]>> => {
-              const response = await fetch(
-                `https://rt.data.gov.hk/v2/transport/citybus/route-stop/${co}/${route}/inbound`
+            queryFn: async (): Promise<DataWrapper<RouteStopCitybus[]>> => {
+              const response = await limit(() =>
+                fetch(
+                  `https://rt.data.gov.hk/v2/transport/citybus/route-stop/${co}/${route}/inbound`
+                )
               );
 
               if (!response.ok) {
@@ -40,25 +59,27 @@ const useCitybus = () => {
               }
 
               const responseJson = (await response.json()) as DataWrapper<
-                RouteStopV2[]
+                RouteStopCitybus[]
               >;
 
               worker.postMessage({
-                type: "route-stop-v2",
+                type: "save::route-stop-citybus",
                 data: responseJson.data,
               });
 
               return responseJson;
             },
-            staleTime: Infinity,
+            staleTime: ONE_WEEK,
           };
         }) || []),
         ...(routeData?.data.map(({ co, route }) => {
           return {
             queryKey: ["/citybus/route-stop/", co, route],
-            queryFn: async (): Promise<DataWrapper<RouteStopV2[]>> => {
-              const response = await fetch(
-                `https://rt.data.gov.hk/v2/transport/citybus/route-stop/${co}/${route}/outbound`
+            queryFn: async (): Promise<DataWrapper<RouteStopCitybus[]>> => {
+              const response = await limit(() =>
+                fetch(
+                  `https://rt.data.gov.hk/v2/transport/citybus/route-stop/${co}/${route}/outbound`
+                )
               );
 
               if (!response.ok) {
@@ -68,17 +89,17 @@ const useCitybus = () => {
               }
 
               const responseJson = (await response.json()) as DataWrapper<
-                RouteStopV2[]
+                RouteStopCitybus[]
               >;
 
               worker.postMessage({
-                type: "route-stop-v2",
+                type: "save::route-stop-citybus",
                 data: responseJson.data,
               });
 
               return responseJson;
             },
-            staleTime: Infinity,
+            staleTime: ONE_WEEK,
           };
         }) || []),
       ] || [],
@@ -110,13 +131,13 @@ const useCitybus = () => {
     }
   }
 
-  useQueries({
+  const { isLoading: stopIsLoading, error: stopError } = useQueries({
     queries: stopList.map((stop) => {
       return {
         queryKey: ["/citybus/stop/", stop],
-        queryFn: async (): Promise<DataWrapper<Stop>> => {
-          const response = await fetch(
-            `https://rt.data.gov.hk/v2/transport/citybus/stop/${stop}`
+        queryFn: async (): Promise<DataWrapper<StopCitybus>> => {
+          const response = await limit(() =>
+            fetch(`https://rt.data.gov.hk/v2/transport/citybus/stop/${stop}`)
           );
 
           if (!response.ok) {
@@ -125,27 +146,31 @@ const useCitybus = () => {
             );
           }
 
-          const responseJson = (await response.json()) as DataWrapper<Stop>;
+          const responseJson =
+            (await response.json()) as DataWrapper<StopCitybus>;
 
           worker.postMessage({
-            type: "stop",
-            data: [responseJson.data],
+            type: "save::stop-citybus",
+            data: responseJson.data,
           });
 
           return responseJson;
         },
-        staleTime: Infinity,
+        staleTime: ONE_WEEK,
       };
     }),
     combine: (results) => {
       return {
-        data: results.map((result) => result.data?.data),
         isLoading: results.some((result) => result.isLoading),
-        pending: results.some((result) => result.isPending),
         error: results.find((result) => result.error),
       };
     },
   });
+
+  return {
+    isLoading: routeIsLoading || routeStopIsLoading || stopIsLoading,
+    error: routeError || routeStopError || stopError,
+  };
 };
 
-export default useCitybus;
+export default useCitybusBaseData;

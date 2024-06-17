@@ -1,36 +1,13 @@
 import "leaflet/dist/leaflet.css";
-import {
-  MapContainer,
-  Marker,
-  Popup,
-  TileLayer,
-  useMapEvents,
-} from "react-leaflet";
-import useNearBy from "../../hooks/useNearBy";
-import worker from "../../workers";
+import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import useNearByCitybus from "../../hooks/useNearByCitybus";
+import useNearByKmb from "../../hooks/useNearByKmb";
+import Spy from "./Spy";
 import { MapProps, SourceAttribution, SourceUrl } from "./types";
 
-const Spy = () => {
-  const map = useMapEvents({
-    moveend: () => {
-      worker.postMessage({
-        type: "map-bounds",
-        data: map.getBounds(),
-      });
-    },
-    zoomend: () => {
-      worker.postMessage({
-        type: "map-bounds",
-        data: map.getBounds(),
-      });
-    },
-  });
-
-  return null;
-};
-
 const Map = (props: MapProps) => {
-  const { stop } = useNearBy();
+  const { stop: stopKmb } = useNearByKmb();
+  const { stop: stopCitybus } = useNearByCitybus();
 
   if (!props.position) {
     return null;
@@ -51,19 +28,18 @@ const Map = (props: MapProps) => {
         attribution={SourceAttribution[props.source]}
         url={SourceUrl[props.source]}
       />
-      <Marker
-        position={[
-          props.position?.coords.latitude,
-          props.position?.coords.longitude,
-        ]}
-      >
-        <Popup>Current Location</Popup>
-      </Marker>
-      {stop.map((stop) => (
-        <Marker key={stop.id} position={[stop.lat, stop.long]}>
-          <Popup>{stop.name_en}</Popup>
-        </Marker>
-      ))}
+      {props.zoom >= 18 &&
+        stopKmb.map((stop) => (
+          <Marker key={stop.stop} position={[stop.lat, stop.long]}>
+            <Popup>{stop.name_en}</Popup>
+          </Marker>
+        ))}
+      {props.zoom >= 18 &&
+        stopCitybus.map((stop) => (
+          <Marker key={stop.stop} position={[stop.lat, stop.long]}>
+            <Popup>{stop.name_en}</Popup>
+          </Marker>
+        ))}
     </MapContainer>
   );
 };
