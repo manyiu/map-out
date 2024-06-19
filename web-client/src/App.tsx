@@ -3,12 +3,14 @@ import Map from "./Component/Map";
 import { Source } from "./Component/Map/types";
 import useCitybusBaseData from "./hooks/useCitybusBaseData";
 import useGeolocation from "./hooks/useGeolocation";
+import useGmbBaseData from "./hooks/useGmbBaseData";
 import useKmbBaseData from "./hooks/useKmbBaseData";
 
 function App() {
   const { position } = useGeolocation();
   useKmbBaseData();
   useCitybusBaseData();
+  useGmbBaseData();
 
   return (
     <Container width="100%" maxWidth="100dvw" padding={0}>

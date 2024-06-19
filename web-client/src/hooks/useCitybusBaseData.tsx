@@ -23,6 +23,10 @@ const useCitybusBaseData = () => {
         "https://rt.data.gov.hk/v2/transport/citybus/route/ctb"
       );
 
+      if (!response.ok) {
+        throw new Error("Failed to fetch /v2/transport/citybus/route/ctb");
+      }
+
       const responseJson = await response.json();
 
       worker.postMessage({
@@ -132,17 +136,17 @@ const useCitybusBaseData = () => {
   }
 
   const { isLoading: stopIsLoading, error: stopError } = useQueries({
-    queries: stopList.map((stop) => {
+    queries: stopList.map((stopId) => {
       return {
-        queryKey: ["/citybus/stop/", stop],
+        queryKey: ["/citybus/stop/", stopId],
         queryFn: async (): Promise<DataWrapper<StopCitybus>> => {
           const response = await limit(() =>
-            fetch(`https://rt.data.gov.hk/v2/transport/citybus/stop/${stop}`)
+            fetch(`https://rt.data.gov.hk/v2/transport/citybus/stop/${stopId}`)
           );
 
           if (!response.ok) {
             throw new Error(
-              `Failed to fetch /v2/transport/citybus/stop/${stop}`
+              `Failed to fetch /v2/transport/citybus/stop/${stopId}`
             );
           }
 
