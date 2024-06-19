@@ -5,6 +5,14 @@ export interface DataWrapper<T = object> {
   version: string;
 }
 
+export interface RouteListGmb {
+  routes: {
+    HKI: string[];
+    KLN: string[];
+    NT: string[];
+  };
+}
+
 export interface LastUpdateRouteGmb {
   route_id: number;
   last_update_date: string;
@@ -93,12 +101,15 @@ export interface RouteStopCitybus {
 }
 
 export interface RouteStopGmb {
-  route_id: number;
-  route_seq: number;
   stop_seq: number;
+  stop_id: number;
   name_tc: string;
   name_sc: string;
   name_en: string;
+}
+
+export interface RouteStopListGmb {
+  route_stops: RouteStopGmb[];
 }
 
 export interface StopKmb {

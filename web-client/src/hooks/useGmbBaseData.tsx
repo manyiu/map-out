@@ -3,10 +3,9 @@ import pLimit from "p-limit";
 import worker from "../workers";
 import {
   DataWrapper,
-  LastUpdateRouteGmb,
-  LastUpdateStopGmb,
   RouteGmb,
-  RouteStopGmb,
+  RouteListGmb,
+  RouteStopListGmb,
   StopGmb,
 } from "./types";
 
@@ -14,38 +13,44 @@ const limit = pLimit(10);
 const ONE_WEEK = 1000 * 60 * 60 * 24 * 7;
 
 const useGmbBaseData = () => {
-  const { data: routeLateUpdateData } = useQuery({
-    queryKey: ["gmb", "last-update", "route"],
-    queryFn: async (): Promise<DataWrapper<LastUpdateRouteGmb[]>> => {
-      const response = await fetch(
-        "https://data.etagmb.gov.hk/last-update/route"
-      );
+  const { data: routeListData } = useQuery({
+    queryKey: ["gmb", "route-list"],
+    queryFn: async (): Promise<DataWrapper<RouteListGmb>> => {
+      const response = await fetch("https://data.etagmb.gov.hk/route");
 
       if (!response.ok) {
-        throw new Error("Failed to fetch /last-update/route");
+        throw new Error("Failed to fetch /route");
       }
 
-      const responseJson = (await response.json()) as DataWrapper<
-        LastUpdateRouteGmb[]
-      >;
+      const responseJson = (await response.json()) as DataWrapper<RouteListGmb>;
 
       return responseJson;
     },
     staleTime: ONE_WEEK,
   });
 
+  const routeList: { region: "HKI" | "KLN" | "NT"; routeCode: string }[] = [];
+
+  Object.keys(routeListData?.data.routes ?? {}).forEach((region) => {
+    for (const routeCode of routeListData?.data.routes[
+      region as "HKI" | "KLN" | "NT"
+    ] ?? []) {
+      routeList.push({ region: region as "HKI" | "KLN" | "NT", routeCode });
+    }
+  });
+
   const { data: routeData } = useQueries({
     queries:
-      routeLateUpdateData?.data?.map(({ route_id: routeId }) => {
+      routeList?.map(({ region, routeCode }) => {
         return {
-          queryKey: ["gmb", "route", routeId],
+          queryKey: ["gmb", "route", region, routeCode],
           queryFn: async (): Promise<DataWrapper<RouteGmb[]>> => {
             const response = await limit(() =>
-              fetch(`https://data.etagmb.gov.hk/route/${routeId}`)
+              fetch(`https://data.etagmb.gov.hk/route/${region}/${routeCode}`)
             );
 
             if (!response.ok) {
-              throw new Error(`Failed to fetch /route/${routeId}`);
+              throw new Error(`Failed to fetch /route/${region}/${routeCode}`);
             }
 
             const responseJson = (await response.json()) as DataWrapper<
@@ -69,37 +74,42 @@ const useGmbBaseData = () => {
     },
   });
 
-  const routeList: number[] = [];
+  const routeSeqList: { routeId: number; routeSeq: number }[] = [];
 
-  for (const routes of routeData) {
-    if (!routes) {
-      continue;
-    }
-
-    for (const route of routes) {
-      routeList.push(route.route_id);
+  for (const routes of routeData ?? []) {
+    for (const route of routes ?? []) {
+      for (const direction of route.directions ?? []) {
+        routeSeqList.push({
+          routeId: route.route_id,
+          routeSeq: direction.route_seq,
+        });
+      }
     }
   }
 
-  useQueries({
-    queries: routeList.map((routeId) => {
+  const { data: routeStopData } = useQueries({
+    queries: routeSeqList.map(({ routeId, routeSeq }) => {
       return {
-        queryKey: ["gmb", "route-stop", routeId],
-        queryFn: async (): Promise<DataWrapper<RouteStopGmb[]>> => {
+        queryKey: ["gmb", "route-stop", routeId, routeSeq],
+        queryFn: async (): Promise<DataWrapper<RouteStopListGmb>> => {
           const response = await limit(() =>
-            fetch(`https://data.etagmb.gov.hk/route-stop/${routeId}`)
+            fetch(
+              `https://data.etagmb.gov.hk/route-stop/${routeId}/${routeSeq}`
+            )
           );
 
           if (!response.ok) {
-            throw new Error(`Failed to fetch /route-stop/${routeId}`);
+            throw new Error(
+              `Failed to fetch /route-stop/${routeId}/${routeSeq}`
+            );
           }
 
-          const responseJson = (await response.json()) as DataWrapper<
-            RouteStopGmb[]
-          >;
+          const responseJson =
+            (await response.json()) as DataWrapper<RouteStopListGmb>;
 
           worker.postMessage({
             type: "save::route-stop-gmb",
+            params: { routeId, routeSeq },
             data: responseJson.data,
           });
 
@@ -108,31 +118,24 @@ const useGmbBaseData = () => {
         staleTime: ONE_WEEK,
       };
     }),
-  });
-
-  const { data: lastUpdateStopData } = useQuery({
-    queryKey: ["gmb", "last-update", "stop"],
-    queryFn: async (): Promise<DataWrapper<LastUpdateStopGmb[]>> => {
-      const response = await fetch(
-        "https://data.etagmb.gov.hk/last-update/stop"
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch /last-update/stop");
-      }
-
-      const responseJson = (await response.json()) as DataWrapper<
-        LastUpdateStopGmb[]
-      >;
-
-      return responseJson;
+    combine(result) {
+      return {
+        data: result.map((result) => result.data?.data),
+      };
     },
-    staleTime: ONE_WEEK,
   });
+
+  const stopIdList: number[] = [];
+
+  for (const routeStops of routeStopData ?? []) {
+    for (const routeStop of routeStops?.route_stops ?? []) {
+      stopIdList.push(routeStop.stop_id);
+    }
+  }
 
   useQueries({
     queries:
-      lastUpdateStopData?.data?.map(({ stop_id: stopId }) => {
+      stopIdList.map((stopId) => {
         return {
           queryKey: ["gmb", "stop", stopId],
           queryFn: async (): Promise<DataWrapper<StopGmb>> => {
