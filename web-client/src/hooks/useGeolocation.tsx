@@ -1,8 +1,10 @@
 import { useToast } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
+import { useGeolocationStore } from "../stores/geolocation";
 
 const useGeolocation = () => {
-  const [position, setPosition] = useState<GeolocationPosition | null>(null);
+  const geolocation = useGeolocationStore((state) => state.geolocation);
+  const setGeolocation = useGeolocationStore((state) => state.setGeolocation);
   const [error, setError] = useState<string | null>(null);
   const toast = useToast();
 
@@ -21,7 +23,7 @@ const useGeolocation = () => {
     }
 
     geo.getCurrentPosition(
-      (position) => setPosition(position),
+      (position) => setGeolocation(position),
       (error) => {
         toast({
           title: "Geolocation Error",
@@ -36,7 +38,7 @@ const useGeolocation = () => {
 
     const watcher = geo.watchPosition(
       (position) => {
-        setPosition(position);
+        setGeolocation(position);
       },
       (error) => {
         toast({
@@ -51,9 +53,9 @@ const useGeolocation = () => {
     );
 
     return () => geo.clearWatch(watcher);
-  }, [toast]);
+  }, [setGeolocation, toast]);
 
-  return { position, error };
+  return { geolocation, error };
 };
 
 export default useGeolocation;

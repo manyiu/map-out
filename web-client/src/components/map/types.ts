@@ -17,7 +17,6 @@ export enum SourceAttribution {
 }
 
 export interface MapProps {
-  position: GeolocationPosition | null;
   zoom: number;
   source: Source;
 }

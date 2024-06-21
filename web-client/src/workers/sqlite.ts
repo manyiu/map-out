@@ -706,5 +706,11 @@ self.addEventListener(
 
       return;
     }
+
+    if (dataType === "ping") {
+      self.postMessage({ type: "pong" });
+
+      return;
+    }
   }
 );

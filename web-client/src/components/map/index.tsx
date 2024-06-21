@@ -1,29 +1,33 @@
 import "leaflet/dist/leaflet.css";
+import { useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import useGeolocation from "../../hooks/useGeolocation";
 import useNearByCitybus from "../../hooks/useNearByCitybus";
+import useNearByGmb from "../../hooks/useNearByGmb";
 import useNearByKmb from "../../hooks/useNearByKmb";
 import Spy from "./Spy";
 import { MapProps, SourceAttribution, SourceUrl } from "./types";
 
 const Map = (props: MapProps) => {
+  const [ready, setReady] = useState(false);
+  const { geolocation } = useGeolocation();
   const { stop: stopKmb } = useNearByKmb();
   const { stop: stopCitybus } = useNearByCitybus();
+  useNearByGmb();
 
-  if (!props.position) {
+  if (!geolocation) {
     return null;
   }
 
   return (
     <MapContainer
       style={{ height: "100dvh", width: "100%" }}
-      center={[
-        props.position?.coords.latitude,
-        props.position?.coords.longitude,
-      ]}
+      center={[geolocation?.coords.latitude, geolocation?.coords.longitude]}
       zoom={props.zoom}
       scrollWheelZoom={"center"}
+      whenReady={() => setReady(true)}
     >
-      <Spy />
+      <Spy ready={ready} />
       <TileLayer
         attribution={SourceAttribution[props.source]}
         url={SourceUrl[props.source]}

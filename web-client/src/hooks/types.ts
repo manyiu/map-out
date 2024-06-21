@@ -112,6 +112,15 @@ export interface RouteStopListGmb {
   route_stops: RouteStopGmb[];
 }
 
+export interface StopRouteGmb {
+  route_id: number;
+  route_seq: number;
+  stop_seq: number;
+  name_tc: string;
+  name_sc: string;
+  name_en: string;
+}
+
 export interface StopKmb {
   lat: string;
   long: string;
@@ -147,4 +156,41 @@ export interface StopGmb {
   remarks_sc: string | null;
   remarks_en: string | null;
   data_timestamp: string;
+}
+
+export interface EtaGmb {
+  eta_seq: number;
+  diff: number;
+  timestamp: string;
+  remarks_tc: string | null;
+  remarks_sc: string | null;
+  remarks_en: string | null;
+}
+
+export interface EtaRouteStopGmb {
+  route_id: number;
+  route_seq: number;
+  stop_id: number;
+  enabled: boolean;
+  eta: EtaGmb[];
+}
+
+export interface CsdiDataQueryWrapper<T = object> {
+  features: T[];
+  numberMatched: number;
+  numberReturned: number;
+  timeStamp: string;
+  type: string;
+}
+
+export interface TerminusLocationCoordinateGmb {
+  geometry: {
+    coordinates: [number, number];
+    type: string;
+  };
+  properties: {
+    LAST_UPDATE_DATE: string;
+    OBJECTID: number;
+    STOP_ID: number;
+  };
 }
