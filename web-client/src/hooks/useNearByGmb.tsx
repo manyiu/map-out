@@ -34,9 +34,7 @@ const useNearByGmb = () => {
     queryKey: ["gmb-nearby-stop", bounds],
     queryFn: async () => {
       const response = await fetch(
-        `https://api.csdi.gov.hk/apim/dataquery/api/?id=td_rcd_1638874728005_80512&layer=stop_gmb&bbox-crs=WGS84&bbox=${
-          bounds?.getWest
-        },${bounds?.getSouth()},${bounds?.getEast()},${bounds?.getNorth()}&limit=10&offset=0`
+        `https://api.csdi.gov.hk/apim/dataquery/api/?id=td_rcd_1638874728005_80512&layer=stop_gmb&bbox-crs=WGS84&bbox=${bounds?.getWest()},${bounds?.getSouth()},${bounds?.getEast()},${bounds?.getNorth()}&limit=10&offset=0`
       );
 
       if (!response.ok) {
@@ -183,8 +181,13 @@ const useNearByGmb = () => {
       });
     }
 
-    console.log("setDataGroupedByStop");
-    // setDataGroupedByStop(dataGroupedByStop);
+    console.log(dataGroupedByStop);
+
+    if (
+      JSON.stringify(dataGroupedByStop) !== JSON.stringify(dataGroupedByStop)
+    ) {
+      setDataGroupedByStop(dataGroupedByStop);
+    }
   }, [nearbyStopData, routesData, stopEtcData, stopRoutes]);
 
   return { dataGroupedByStop };
