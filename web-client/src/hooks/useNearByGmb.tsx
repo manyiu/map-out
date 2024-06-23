@@ -1,34 +1,19 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 import { useBoundsStore } from "../stores/bounds";
 import {
   CsdiDataQueryWrapper,
+  DataGroupedByStop,
+  DataGroupedByStopRoute,
   DataWrapper,
-  EtaGmb,
   EtaRouteStopGmb,
+  RouteDirectionGmb,
   RouteGmb,
   StopRouteGmb,
   TerminusLocationCoordinateGmb,
 } from "./types";
 
-interface DataGroupedByStopRoute {
-  routeId: number;
-  routeCode: string;
-  eta: EtaGmb[];
-}
-
-interface DataGroupedByStop {
-  stopId: number;
-  lat: number;
-  long: number;
-  routes: DataGroupedByStopRoute[];
-}
-
 const useNearByGmb = () => {
   const bounds = useBoundsStore((state) => state.bounds);
-  const [dataGroupedByStop, setDataGroupedByStop] = useState<
-    DataGroupedByStop[]
-  >([]);
 
   const { data: nearbyStopData } = useQuery({
     queryKey: ["gmb-nearby-stop", bounds],
@@ -134,61 +119,126 @@ const useNearByGmb = () => {
     })),
   });
 
-  useEffect(() => {
-    if (!nearbyStopData || !stopEtcData || !stopRoutes || !routesData) {
-      return;
-    }
+  if (
+    !bounds ||
+    !nearbyStopData ||
+    !stopEtcData ||
+    !stopRoutes ||
+    !routesData
+  ) {
+    return { dataGroupedByStop: [] };
+  }
 
-    const dataGroupedByStop: DataGroupedByStop[] = [];
+  const dataGroupedByStop: DataGroupedByStop[] = [];
 
-    for (const stop of nearbyStopData.features) {
-      const stopId = stop.properties.STOP_ID;
+  for (const stop of nearbyStopData.features) {
+    const stopId = stop.properties.STOP_ID;
 
-      const routes: DataGroupedByStopRoute[] = [];
+    const routes: DataGroupedByStopRoute[] = [];
 
-      for (const stopEta of stopEtcData) {
-        if (stopEta.data?.stopId === stopId) {
-          for (const stopEtaRoute of stopEta.data.data) {
-            let routeCode: string = "";
+    for (const stopEta of stopEtcData) {
+      if (stopEta.data?.stopId === stopId) {
+        for (const stopEtaRoute of stopEta.data.data) {
+          let targetRoute: RouteGmb | null = null;
 
-            findRouteCodeLoop: for (const routes of routesData) {
-              for (const route of routes.data?.data ?? []) {
-                if (stopEtaRoute.route_id === route.route_id) {
-                  routeCode = route.route_code;
-                  break findRouteCodeLoop;
-                }
+          findRouteCodeLoop: for (const routes of routesData) {
+            for (const route of routes.data?.data ?? []) {
+              if (stopEtaRoute.route_id === route.route_id) {
+                targetRoute = route;
+                break findRouteCodeLoop;
               }
             }
-
-            if (!routeCode) {
-              continue;
-            }
-
-            routes.push({
-              routeId: stopEtaRoute.route_id,
-              routeCode,
-              eta: stopEtaRoute.eta,
-            });
           }
+
+          if (!targetRoute || !targetRoute.route_code) {
+            continue;
+          }
+
+          let targetStopRoute: StopRouteGmb | null = null;
+
+          findStopRouteLoop: for (const stopRoute of stopRoutes) {
+            for (const route of stopRoute.data?.data ?? []) {
+              if (
+                stopEtaRoute.route_id === route.route_id &&
+                stopEtaRoute.route_seq === route.route_seq
+              ) {
+                targetStopRoute = route;
+                break findStopRouteLoop;
+              }
+            }
+          }
+
+          if (!targetStopRoute) {
+            continue;
+          }
+
+          let targetDirection: RouteDirectionGmb | null = null;
+
+          for (const direction of targetRoute.directions) {
+            if (direction.route_seq === stopEtaRoute.route_seq) {
+              targetDirection = direction;
+              break;
+            }
+          }
+
+          if (!targetDirection) {
+            continue;
+          }
+
+          routes.push({
+            routeId: stopEtaRoute.route_id,
+            routeCode: targetRoute.route_code,
+            routeSeq: targetStopRoute.route_seq,
+            stopSeq: targetStopRoute.stop_seq,
+            stopName: {
+              tc: targetStopRoute.name_tc,
+              sc: targetStopRoute.name_sc,
+              en: targetStopRoute.name_en,
+            },
+            description: {
+              tc: targetRoute.description_tc,
+              sc: targetRoute.description_sc,
+              en: targetRoute.description_en,
+            },
+            direction: {
+              orig: {
+                tc: targetDirection.orig_tc,
+                sc: targetDirection.orig_sc,
+                en: targetDirection.orig_en,
+              },
+              dest: {
+                tc: targetDirection.dest_tc,
+                sc: targetDirection.dest_sc,
+                en: targetDirection.dest_en,
+              },
+              remarks: {
+                tc: targetDirection.remarks_tc,
+                sc: targetDirection.remarks_sc,
+                en: targetDirection.remarks_en,
+              },
+            },
+            eta: stopEtaRoute.eta.map((eta) => ({
+              etaSeq: eta.eta_seq,
+              diff: eta.diff,
+              timestamp: eta.timestamp,
+              remarks: {
+                tc: eta.remarks_tc,
+                sc: eta.remarks_sc,
+                en: eta.remarks_en,
+              },
+            })),
+          });
         }
       }
-
-      dataGroupedByStop.push({
-        stopId,
-        lat: stop.geometry.coordinates[1],
-        long: stop.geometry.coordinates[0],
-        routes,
-      });
     }
 
-    console.log(dataGroupedByStop);
-
-    if (
-      JSON.stringify(dataGroupedByStop) !== JSON.stringify(dataGroupedByStop)
-    ) {
-      setDataGroupedByStop(dataGroupedByStop);
-    }
-  }, [nearbyStopData, routesData, stopEtcData, stopRoutes]);
+    dataGroupedByStop.push({
+      stopId,
+      lat: stop.geometry.coordinates[1],
+      long: stop.geometry.coordinates[0],
+      routes,
+    });
+  }
 
   return { dataGroupedByStop };
 };

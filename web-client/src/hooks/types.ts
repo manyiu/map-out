@@ -194,3 +194,56 @@ export interface TerminusLocationCoordinateGmb {
     STOP_ID: number;
   };
 }
+
+interface DataGroupedByStopRouteEta {
+  etaSeq: number;
+  diff: number;
+  timestamp: string;
+  remarks: {
+    tc: string | null;
+    sc: string | null;
+    en: string | null;
+  };
+}
+
+export interface DataGroupedByStopRoute {
+  routeId: number;
+  routeCode: string;
+  routeSeq: number;
+  stopSeq: number;
+  stopName: {
+    tc: string;
+    sc: string;
+    en: string;
+  };
+  description: {
+    tc: string;
+    sc: string;
+    en: string;
+  };
+  direction: {
+    orig: {
+      tc: string;
+      sc: string;
+      en: string;
+    };
+    dest: {
+      tc: string;
+      sc: string;
+      en: string;
+    };
+    remarks: {
+      tc: string | null;
+      sc: string | null;
+      en: string | null;
+    };
+  };
+  eta: DataGroupedByStopRouteEta[];
+}
+
+export interface DataGroupedByStop {
+  stopId: number;
+  lat: number;
+  long: number;
+  routes: DataGroupedByStopRoute[];
+}

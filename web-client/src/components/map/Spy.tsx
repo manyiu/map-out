@@ -11,7 +11,7 @@ const Spy = ({ ready }: SpyProps) => {
   const setBounds = useBoundsStore((state) => state.setBounds);
 
   const map = useMapEvents({
-    moveend: () => {
+    dragend: () => {
       setBounds(map.getBounds());
 
       worker.postMessage({

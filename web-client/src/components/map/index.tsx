@@ -1,3 +1,4 @@
+import { Card, CardBody, CardHeader } from "@chakra-ui/react";
 import "leaflet/dist/leaflet.css";
 import { useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
@@ -13,7 +14,7 @@ const Map = (props: MapProps) => {
   const { geolocation } = useGeolocation();
   const { stop: stopKmb } = useNearByKmb();
   const { stop: stopCitybus } = useNearByCitybus();
-  useNearByGmb();
+  const { dataGroupedByStop } = useNearByGmb();
 
   if (!geolocation) {
     return null;
@@ -31,19 +32,47 @@ const Map = (props: MapProps) => {
       <TileLayer
         attribution={SourceAttribution[props.source]}
         url={SourceUrl[props.source]}
+        crossOrigin={"anonymous"}
       />
-      {props.zoom >= 18 &&
-        stopKmb.map((stop) => (
-          <Marker key={stop.stop} position={[stop.lat, stop.long]}>
-            <Popup>{stop.name_en}</Popup>
-          </Marker>
-        ))}
-      {props.zoom >= 18 &&
-        stopCitybus.map((stop) => (
-          <Marker key={stop.stop} position={[stop.lat, stop.long]}>
-            <Popup>{stop.name_en}</Popup>
-          </Marker>
-        ))}
+      {stopKmb.map((stop) => (
+        <Marker key={stop.stop} position={[stop.lat, stop.long]}>
+          <Popup>{stop.name_en}</Popup>
+        </Marker>
+      ))}
+      {stopCitybus.map((stop) => (
+        <Marker key={stop.stop} position={[stop.lat, stop.long]}>
+          <Popup>{stop.name_en}</Popup>
+        </Marker>
+      ))}
+      {dataGroupedByStop.map((stop) => (
+        <Marker key={stop.stopId} position={[stop.lat, stop.long]}>
+          <Popup>
+            {stop.routes.map((route) => (
+              <Card key={`${route.routeId}-${route.routeSeq}-${route.stopSeq}`}>
+                <CardHeader>{route.routeCode}</CardHeader>
+                <CardBody>
+                  <p>{route.description.en}</p>
+                  <p>{route.description.tc}</p>
+                  <p>
+                    {route.direction.orig.en} - {route.direction.dest.en}
+                  </p>
+                  <p>{route.stopName.en}</p>
+                  <ul>
+                    {route.eta.map((eta) => (
+                      <li key={eta.etaSeq}>
+                        <h3>{eta.etaSeq}</h3>
+                        <p>{eta.diff}</p>
+                        <p>{eta.timestamp}</p>
+                        <p>{eta.remarks.en}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </CardBody>
+              </Card>
+            ))}
+          </Popup>
+        </Marker>
+      ))}
     </MapContainer>
   );
 };

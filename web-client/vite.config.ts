@@ -6,8 +6,8 @@ export default defineConfig({
   server: {
     headers: {
       "Cross-Origin-Opener-Policy": "same-origin",
-      "Cross-Origin-Embedder-Policy": "credentialless",
-      // "Cross-Origin-Embedder-Policy": "require-corp",
+      // "Cross-Origin-Embedder-Policy": "credentialless",
+      "Cross-Origin-Embedder-Policy": "require-corp",
     },
   },
   optimizeDeps: {
@@ -21,7 +21,7 @@ export default defineConfig({
     //     server.middlewares.use((req, res, next) => {
     //       if (req.originalUrl?.includes("@sqlite.org/sqlite-wasm")) {
     //         res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
-    //         // res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+    //         res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
     //         res.setHeader("Cross-Origin-Embedder-Policy", "credentialless");
     //       }
     //       next();
