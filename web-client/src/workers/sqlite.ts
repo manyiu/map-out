@@ -13,12 +13,13 @@ import {
   StopKmb,
 } from "../hooks/types";
 
-const sqlite3 = await sqlite3InitModule({});
+const main = async () => {
+  const sqlite3 = await sqlite3InitModule({});
 
-const db = new sqlite3.oo1.OpfsDb("/map-out.sqlite3");
+  const db = new sqlite3.oo1.OpfsDb("/map-out.sqlite3");
 
-//#region Create RouteKmb table
-const createRouteKmbSql = `
+  //#region Create RouteKmb table
+  const createRouteKmbSql = `
   CREATE TABLE IF NOT EXISTS RouteKmb (
     bound CHAR(1) NOT NULL,
     dest_en TEXT NOT NULL,
@@ -33,11 +34,11 @@ const createRouteKmbSql = `
   )
 `;
 
-db.exec(createRouteKmbSql);
-//#endregion Create RouteKmb table
+  db.exec(createRouteKmbSql);
+  //#endregion Create RouteKmb table
 
-//#region Create RouteCitybus table
-const createRouteCitybusSql = `
+  //#region Create RouteCitybus table
+  const createRouteCitybusSql = `
   CREATE TABLE IF NOT EXISTS RouteCitybus (
     co TEXT NOT NULL,
     data_timestamp DATETIME NOT NULL,
@@ -51,11 +52,11 @@ const createRouteCitybusSql = `
   )
 `;
 
-db.exec(createRouteCitybusSql);
-//#endregion Create RouteCitybus table
+  db.exec(createRouteCitybusSql);
+  //#endregion Create RouteCitybus table
 
-//#region Create GMB Route related tables
-const createRouteGmbSql = `
+  //#region Create GMB Route related tables
+  const createRouteGmbSql = `
   CREATE TABLE IF NOT EXISTS RouteGmb (
     route_id INTEGER PRIMARY KEY NOT NULL,
     region TEXT NOT NULL,
@@ -67,9 +68,9 @@ const createRouteGmbSql = `
   )
 `;
 
-db.exec(createRouteGmbSql);
+  db.exec(createRouteGmbSql);
 
-const createRouteDirectionGmbSql = `
+  const createRouteDirectionGmbSql = `
   CREATE TABLE IF NOT EXISTS RouteDirectionGmb (
     route_id INTEGER NOT NULL,
     route_seq INTEGER NOT NULL,
@@ -87,9 +88,9 @@ const createRouteDirectionGmbSql = `
   )
 `;
 
-db.exec(createRouteDirectionGmbSql);
+  db.exec(createRouteDirectionGmbSql);
 
-const createRouteHeadwayGmbSql = `
+  const createRouteHeadwayGmbSql = `
   CREATE TABLE IF NOT EXISTS RouteHeadwayGmb (
     route_id INTEGER NOT NULL,
     route_seq INTEGER NOT NULL,
@@ -110,11 +111,11 @@ const createRouteHeadwayGmbSql = `
   )
 `;
 
-db.exec(createRouteHeadwayGmbSql);
-//#endregion Create GMB Route related tables
+  db.exec(createRouteHeadwayGmbSql);
+  //#endregion Create GMB Route related tables
 
-//#region Create RouteStopKmb table
-const createRouteStopKmbSql = `
+  //#region Create RouteStopKmb table
+  const createRouteStopKmbSql = `
   CREATE TABLE IF NOT EXISTS RouteStopKmb (
     bound CHAR(1) NOT NULL,
     route TEXT NOT NULL,
@@ -124,11 +125,11 @@ const createRouteStopKmbSql = `
     PRIMARY KEY (route, stop, service_type, seq)
   )
 `;
-db.exec(createRouteStopKmbSql);
-//#endregion Create RouteStopKmb table
+  db.exec(createRouteStopKmbSql);
+  //#endregion Create RouteStopKmb table
 
-//#region Create RouteStopCitybus table
-const createRouteStopCitybusSql = `
+  //#region Create RouteStopCitybus table
+  const createRouteStopCitybusSql = `
   CREATE TABLE IF NOT EXISTS RouteStopCitybus (
     co TEXT NOT NULL,
     data_timestamp TEXT NOT NULL,
@@ -140,11 +141,11 @@ const createRouteStopCitybusSql = `
   )
 `;
 
-db.exec(createRouteStopCitybusSql);
-//#endregion Create RouteStopCitybus table
+  db.exec(createRouteStopCitybusSql);
+  //#endregion Create RouteStopCitybus table
 
-//#region Create RouteStopGmb table
-const createRouteStopGmbSql = `
+  //#region Create RouteStopGmb table
+  const createRouteStopGmbSql = `
   CREATE TABLE IF NOT EXISTS RouteStopGmb (
     route_id INTEGER NOT NULL,
     route_seq INTEGER NOT NULL,
@@ -156,11 +157,11 @@ const createRouteStopGmbSql = `
   )
 `;
 
-db.exec(createRouteStopGmbSql);
-//#endregion Create RouteStopGmb table
+  db.exec(createRouteStopGmbSql);
+  //#endregion Create RouteStopGmb table
 
-//#region Create StopKmb table
-const createStopKmbSql = `
+  //#region Create StopKmb table
+  const createStopKmbSql = `
   CREATE TABLE IF NOT EXISTS StopKmb (
     lat REAL NOT NULL,
     long REAL NOT NULL,
@@ -171,18 +172,18 @@ const createStopKmbSql = `
   )
 `;
 
-db.exec(createStopKmbSql);
+  db.exec(createStopKmbSql);
 
-const createStopKmbIndexSql = `
+  const createStopKmbIndexSql = `
   CREATE INDEX IF NOT EXISTS StopKmb_lat_long
   ON StopKmb (lat, long)
 `;
 
-db.exec(createStopKmbIndexSql);
-//#endregion Create StopKmb table
+  db.exec(createStopKmbIndexSql);
+  //#endregion Create StopKmb table
 
-//#region Create StopCitybus table
-const createStopCitybusSql = `
+  //#region Create StopCitybus table
+  const createStopCitybusSql = `
   CREATE TABLE IF NOT EXISTS StopCitybus (
     data_timestamp DATETIME NOT NULL,
     lat REAL NOT NULL,
@@ -194,18 +195,18 @@ const createStopCitybusSql = `
   )
 `;
 
-db.exec(createStopCitybusSql);
+  db.exec(createStopCitybusSql);
 
-const createStopCitybusIndexSql = `
+  const createStopCitybusIndexSql = `
   CREATE INDEX IF NOT EXISTS StopCitybus_lat_long
   ON StopCitybus (lat, long)
 `;
 
-db.exec(createStopCitybusIndexSql);
-//#endregion Create StopCitybus table
+  db.exec(createStopCitybusIndexSql);
+  //#endregion Create StopCitybus table
 
-//#region Create GMB Stop table
-const createStopGmbSql = `
+  //#region Create GMB Stop table
+  const createStopGmbSql = `
   CREATE TABLE IF NOT EXISTS StopGmb (
     id INTEGER PRIMARY KEY NOT NULL,
     coordinates_wgs84_latitude REAL NOT NULL,
@@ -220,32 +221,32 @@ const createStopGmbSql = `
   )
 `;
 
-db.exec(createStopGmbSql);
+  db.exec(createStopGmbSql);
 
-const createStopGmbIndexSql = `
+  const createStopGmbIndexSql = `
   CREATE INDEX IF NOT EXISTS StopGmb_coordinates_wgs84
   ON StopGmb (coordinates_wgs84_latitude, coordinates_wgs84_longitude)
 `;
 
-db.exec(createStopGmbIndexSql);
-//#endregion Create GMB Stop table
+  db.exec(createStopGmbIndexSql);
+  //#endregion Create GMB Stop table
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-interface MessageEventData<T = any, U = any> {
-  type: string;
-  params?: U;
-  data: T;
-}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  interface MessageEventData<T = any, U = any> {
+    type: string;
+    params?: U;
+    data: T;
+  }
 
-self.addEventListener(
-  "message",
-  async (event: MessageEvent<MessageEventData>) => {
-    const dataType = event.data.type;
+  self.addEventListener(
+    "message",
+    async (event: MessageEvent<MessageEventData>) => {
+      const dataType = event.data.type;
 
-    if (dataType === "save::route-kmb") {
-      const data = event.data.data as RouteKmb[];
+      if (dataType === "save::route-kmb") {
+        const data = event.data.data as RouteKmb[];
 
-      const sql = `
+        const sql = `
         INSERT OR REPLACE INTO RouteKmb (
           bound,
           dest_en,
@@ -271,15 +272,15 @@ self.addEventListener(
           .join(", ")}
       `;
 
-      db.exec(sql);
+        db.exec(sql);
 
-      return;
-    }
+        return;
+      }
 
-    if (dataType === "save::route-citybus") {
-      const data = event.data.data as RouteCitybus[];
+      if (dataType === "save::route-citybus") {
+        const data = event.data.data as RouteCitybus[];
 
-      const sql = `
+        const sql = `
         INSERT OR REPLACE INTO RouteCitybus (
           co,
           data_timestamp,
@@ -304,15 +305,15 @@ self.addEventListener(
           .join(", ")}
       `;
 
-      db.exec(sql);
+        db.exec(sql);
 
-      return;
-    }
+        return;
+      }
 
-    if (dataType === "save::route-gmb") {
-      const data = event.data.data as RouteGmb[];
+      if (dataType === "save::route-gmb") {
+        const data = event.data.data as RouteGmb[];
 
-      const routeSql = `
+        const routeSql = `
         INSERT OR REPLACE INTO RouteGmb (
           route_id,
           region,
@@ -334,20 +335,20 @@ self.addEventListener(
           .join(",")}
       `;
 
-      db.exec(routeSql);
+        db.exec(routeSql);
 
-      const directions: (RouteDirectionGmb & { route_id: number })[] = [];
+        const directions: (RouteDirectionGmb & { route_id: number })[] = [];
 
-      for (const route of data) {
-        for (const direction of route.directions) {
-          directions.push({
-            ...direction,
-            route_id: route.route_id,
-          });
+        for (const route of data) {
+          for (const direction of route.directions) {
+            directions.push({
+              ...direction,
+              route_id: route.route_id,
+            });
+          }
         }
-      }
 
-      const directionSql = `
+        const directionSql = `
         INSERT OR REPLACE INTO RouteDirectionGmb (
           route_id,
           route_seq,
@@ -382,30 +383,30 @@ self.addEventListener(
           .join(", ")}
       `;
 
-      db.exec(directionSql);
+        db.exec(directionSql);
 
-      const headways: (RouteDirectionHeadwayGmb & {
-        route_id: number;
-        route_seq: number;
-      })[] = [];
+        const headways: (RouteDirectionHeadwayGmb & {
+          route_id: number;
+          route_seq: number;
+        })[] = [];
 
-      for (const route of data) {
-        for (const direction of route.directions) {
-          for (const headway of direction.headways) {
-            headways.push({
-              ...headway,
-              route_id: route.route_id,
-              route_seq: direction.route_seq,
-            });
+        for (const route of data) {
+          for (const direction of route.directions) {
+            for (const headway of direction.headways) {
+              headways.push({
+                ...headway,
+                route_id: route.route_id,
+                route_seq: direction.route_seq,
+              });
+            }
           }
         }
-      }
 
-      if (headways.length === 0) {
-        return;
-      }
+        if (headways.length === 0) {
+          return;
+        }
 
-      const headwaySql = `
+        const headwaySql = `
         INSERT OR REPLACE INTO RouteHeadwayGmb (
           route_id,
           route_seq,
@@ -440,15 +441,15 @@ self.addEventListener(
           .join(", ")}
       `;
 
-      db.exec(headwaySql);
+        db.exec(headwaySql);
 
-      return;
-    }
+        return;
+      }
 
-    if (dataType === "save::route-stop-kmb") {
-      const data = event.data.data as RouteStopKmb[];
+      if (dataType === "save::route-stop-kmb") {
+        const data = event.data.data as RouteStopKmb[];
 
-      const sql = `
+        const sql = `
         INSERT OR REPLACE INTO RouteStopKmb (
           bound,
           route,
@@ -465,19 +466,19 @@ self.addEventListener(
           .join(", ")}
       `;
 
-      db.exec(sql);
+        db.exec(sql);
 
-      return;
-    }
-
-    if (dataType === "save::route-stop-citybus") {
-      if (event.data.data.length === 0) {
         return;
       }
 
-      const data = event.data.data as RouteStopCitybus[];
+      if (dataType === "save::route-stop-citybus") {
+        if (event.data.data.length === 0) {
+          return;
+        }
 
-      const sql = `
+        const data = event.data.data as RouteStopCitybus[];
+
+        const sql = `
         INSERT OR REPLACE INTO RouteStopCitybus (
           co,
           data_timestamp,
@@ -497,16 +498,19 @@ self.addEventListener(
           .join(", ")}
       `;
 
-      db.exec(sql);
+        db.exec(sql);
 
-      return;
-    }
+        return;
+      }
 
-    if (dataType === "save::route-stop-gmb") {
-      const params = event.data.params as { routeId: number; routeSeq: number };
-      const data = event.data.data as RouteStopListGmb;
+      if (dataType === "save::route-stop-gmb") {
+        const params = event.data.params as {
+          routeId: number;
+          routeSeq: number;
+        };
+        const data = event.data.data as RouteStopListGmb;
 
-      const sql = `
+        const sql = `
         INSERT OR REPLACE INTO RouteStopGmb (
           route_id,
           route_seq,
@@ -526,15 +530,15 @@ self.addEventListener(
           .join(", ")}
       `;
 
-      db.exec(sql);
+        db.exec(sql);
 
-      return;
-    }
+        return;
+      }
 
-    if (dataType === "save::stop-kmb") {
-      const data = event.data.data as StopKmb[];
+      if (dataType === "save::stop-kmb") {
+        const data = event.data.data as StopKmb[];
 
-      const sql = `
+        const sql = `
         INSERT OR REPLACE INTO StopKmb (
           lat,
           long,
@@ -554,15 +558,15 @@ self.addEventListener(
           .join(", ")}
       `;
 
-      db.exec(sql);
+        db.exec(sql);
 
-      return;
-    }
+        return;
+      }
 
-    if (dataType === "save::stop-citybus") {
-      const data = event.data.data as StopCitybus;
+      if (dataType === "save::stop-citybus") {
+        const data = event.data.data as StopCitybus;
 
-      const sql = `
+        const sql = `
         INSERT OR REPLACE INTO StopCitybus (
           data_timestamp,
           lat,
@@ -574,21 +578,21 @@ self.addEventListener(
         ) VALUES (${
           new Date(data.data_timestamp).getTime() / 1000
         }, ${parseFloat(data.lat)}, ${parseFloat(
-        data.long
-      )}, '${data.name_en.replace(/'/g, "''")}', '${data.name_sc}', '${
-        data.name_tc
-      }', '${data.stop}')
+          data.long
+        )}, '${data.name_en.replace(/'/g, "''")}', '${data.name_sc}', '${
+          data.name_tc
+        }', '${data.stop}')
       `;
 
-      db.exec(sql);
+        db.exec(sql);
 
-      return;
-    }
+        return;
+      }
 
-    if (dataType === "save::stop-gmb") {
-      const data = event.data.data as StopGmb & { id: string };
+      if (dataType === "save::stop-gmb") {
+        const data = event.data.data as StopGmb & { id: string };
 
-      const sql = `
+        const sql = `
         INSERT OR REPLACE INTO StopGmb (
           id,
           coordinates_wgs84_latitude,
@@ -601,52 +605,52 @@ self.addEventListener(
           remarks_en,
           data_timestamp
         ) VALUES (${parseInt(data.id)}, ${data.coordinates.wgs84.latitude}, ${
-        data.coordinates.wgs84.longitude
-      }, ${data.coordinates.hk80.latitude}, ${
-        data.coordinates.hk80.longitude
-      }, ${data.enabled}, ${
-        data.remarks_tc ? `'${data.remarks_tc}'` : "NULL"
-      }, ${data.remarks_sc ? `'${data.remarks_sc}'` : "NULL"}, ${
-        data.remarks_en ? `'${data.remarks_en}'` : "NULL"
-      }, ${new Date(data.data_timestamp).getTime() / 1000})
+          data.coordinates.wgs84.longitude
+        }, ${data.coordinates.hk80.latitude}, ${
+          data.coordinates.hk80.longitude
+        }, ${data.enabled}, ${
+          data.remarks_tc ? `'${data.remarks_tc}'` : "NULL"
+        }, ${data.remarks_sc ? `'${data.remarks_sc}'` : "NULL"}, ${
+          data.remarks_en ? `'${data.remarks_en}'` : "NULL"
+        }, ${new Date(data.data_timestamp).getTime() / 1000})
       `;
 
-      db.exec(sql);
+        db.exec(sql);
 
-      return;
-    }
+        return;
+      }
 
-    if (dataType === "map-bounds") {
-      const bounds = {
-        lat: {
-          lower: event.data.data._southWest.lat,
-          upper: event.data.data._northEast.lat,
-        },
-        lng: {
-          lower: event.data.data._southWest.lng,
-          upper: event.data.data._northEast.lng,
-        },
-      };
+      if (dataType === "map-bounds") {
+        const bounds = {
+          lat: {
+            lower: event.data.data._southWest.lat,
+            upper: event.data.data._northEast.lat,
+          },
+          lng: {
+            lower: event.data.data._southWest.lng,
+            upper: event.data.data._northEast.lng,
+          },
+        };
 
-      const stopKmbSql = `
+        const stopKmbSql = `
         SELECT *
         FROM StopKmb
         WHERE lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
         AND long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
       `;
 
-      const stopsKmb = db.exec({
-        sql: stopKmbSql,
-        rowMode: "object",
-        returnValue: "resultRows",
-      });
+        const stopsKmb = db.exec({
+          sql: stopKmbSql,
+          rowMode: "object",
+          returnValue: "resultRows",
+        });
 
-      self.postMessage({
-        type: "result::nearby-stop-kmb",
-        data: stopsKmb,
-      });
+        self.postMessage({
+          type: "result::nearby-stop-kmb",
+          data: stopsKmb,
+        });
 
-      const routeKmbSql = `
+        const routeKmbSql = `
         SELECT *
         FROM RouteKmb
         JOIN RouteStopKmb ON RouteKmb.route = RouteStopKmb.route
@@ -655,36 +659,36 @@ self.addEventListener(
         AND StopKmb.long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
       `;
 
-      const routesKmb = db.exec({
-        sql: routeKmbSql,
-        rowMode: "object",
-        returnValue: "resultRows",
-      });
+        const routesKmb = db.exec({
+          sql: routeKmbSql,
+          rowMode: "object",
+          returnValue: "resultRows",
+        });
 
-      self.postMessage({
-        type: "result::nearby-route-kmb",
-        data: routesKmb,
-      });
+        self.postMessage({
+          type: "result::nearby-route-kmb",
+          data: routesKmb,
+        });
 
-      const stopCitybusSql = `
+        const stopCitybusSql = `
         SELECT *
         FROM StopCitybus
         WHERE lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
         AND long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
       `;
 
-      const stopsCitybus = db.exec({
-        sql: stopCitybusSql,
-        rowMode: "object",
-        returnValue: "resultRows",
-      });
+        const stopsCitybus = db.exec({
+          sql: stopCitybusSql,
+          rowMode: "object",
+          returnValue: "resultRows",
+        });
 
-      self.postMessage({
-        type: "result::nearby-stop-citybus",
-        data: stopsCitybus,
-      });
+        self.postMessage({
+          type: "result::nearby-stop-citybus",
+          data: stopsCitybus,
+        });
 
-      const routeCitybusSql = `
+        const routeCitybusSql = `
         SELECT *
         FROM RouteCitybus
         JOIN RouteStopCitybus ON RouteCitybus.route = RouteStopCitybus.route
@@ -693,24 +697,27 @@ self.addEventListener(
         AND StopCitybus.long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
       `;
 
-      const routesCitybus = db.exec({
-        sql: routeCitybusSql,
-        rowMode: "object",
-        returnValue: "resultRows",
-      });
+        const routesCitybus = db.exec({
+          sql: routeCitybusSql,
+          rowMode: "object",
+          returnValue: "resultRows",
+        });
 
-      self.postMessage({
-        type: "result::nearby-route-citybus",
-        data: routesCitybus,
-      });
+        self.postMessage({
+          type: "result::nearby-route-citybus",
+          data: routesCitybus,
+        });
 
-      return;
+        return;
+      }
+
+      if (dataType === "ping") {
+        self.postMessage({ type: "pong" });
+
+        return;
+      }
     }
+  );
+};
 
-    if (dataType === "ping") {
-      self.postMessage({ type: "pong" });
-
-      return;
-    }
-  }
-);
+main();

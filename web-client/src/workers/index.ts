@@ -1,4 +1,4 @@
-const worker = new Worker(new URL("./sqlite.ts", import.meta.url), {
+const worker = new Worker(new URL("./sqlite.ts?worker", import.meta.url), {
   type: "module",
 });
 
