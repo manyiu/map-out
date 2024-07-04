@@ -157,6 +157,32 @@ async fn function_handler(
             .send()
             .await
             .unwrap();
+
+        let get_kmb_stop_list_message_attribute_value = MessageAttributeValue::builder()
+            .set_data_type(Some("String".to_string()))
+            .set_string_value(Some("generic-crawler".to_string()))
+            .build()
+            .unwrap();
+
+        let get_kmb_stop_list_message = GenericCrawlerMessage {
+            url: "https://data.etabus.gov.hk/v1/transport/kmb/stop".to_string(),
+            s3_bucket: env::var("RAW_DATA_BUCKET").unwrap(),
+            s3_key: format!(
+                "raw/{}/kmb/stop-list/stop-list.json",
+                new_update_date_string
+            ),
+        };
+
+        let get_kmb_stop_list_json = serde_json::to_string(&get_kmb_stop_list_message).unwrap();
+
+        let _ = sns_client
+            .publish()
+            .topic_arn(env::var("UPDATE_DATA_TOPIC_ARN").unwrap())
+            .message_attributes("type", get_kmb_stop_list_message_attribute_value)
+            .message(get_kmb_stop_list_json)
+            .send()
+            .await
+            .unwrap();
     }
 
     Ok(())

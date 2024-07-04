@@ -17,6 +17,7 @@ edition = "2021"
 [dependencies]
 aws-config = "1.5.3"
 aws-sdk-s3 = "1.38.0"
+aws-sdk-sns = "1.34.0"
 aws_lambda_events = { version = "0.15.1", default-features = false, features = ["sns"] }
 chrono = "0.4.38"
 futures = "0.3.30"

@@ -65,6 +65,7 @@ export class MapOutStack extends cdk.Stack {
         environment: {
           DYNAMODB_TABLE_NAME: dynamodbTable.tableName,
           UPDATE_DATA_TOPIC_ARN: updateDataTopic.topicArn,
+          RAW_DATA_BUCKET: rawDataBucket.bucketName,
         },
         timeout: cdk.Duration.seconds(5),
       }
@@ -106,12 +107,14 @@ export class MapOutStack extends cdk.Stack {
         environment: {
           RAW_DATA_BUCKET: rawDataBucket.bucketName,
           DYNAMODB_TABLE_NAME: dynamodbTable.tableName,
+          UPDATE_DATA_TOPIC_ARN: updateDataTopic.topicArn,
         },
         timeout: cdk.Duration.minutes(3),
       }
     );
     rawDataBucket.grantWrite(crawlCitybusRouteStopFunction);
     dynamodbTable.grantReadData(crawlCitybusRouteStopFunction);
+    updateDataTopic.grantPublish(crawlCitybusRouteStopFunction);
     updateDataTopic.addSubscription(
       new cdk.aws_sns_subscriptions.LambdaSubscription(
         crawlCitybusRouteStopFunction,

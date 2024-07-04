@@ -1,6 +1,7 @@
 use aws_config::BehaviorVersion;
 use aws_lambda_events::sns::SnsEvent;
 use aws_sdk_s3::primitives::ByteStream;
+use aws_sdk_sns::types::MessageAttributeValue;
 use futures::StreamExt;
 use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
 use serde::{Deserialize, Serialize};
@@ -9,8 +10,14 @@ use tokio::task;
 
 #[derive(Deserialize, Debug)]
 struct TopicMessage {
-    last_update_date: String,
     new_update_date: String,
+}
+
+#[derive(Serialize, Debug)]
+struct GenericCrawlerMessage {
+    url: String,
+    s3_bucket: String,
+    s3_key: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -47,14 +54,12 @@ struct RouteStopData {
 async fn function_handler(
     event: LambdaEvent<SnsEvent>,
     s3_client: &aws_sdk_s3::Client,
+    sns_client: &aws_sdk_sns::Client,
 ) -> Result<(), Error> {
     let http_client = reqwest::Client::new();
 
     let topic_message: TopicMessage =
         serde_json::from_str(&event.payload.records[0].sns.message).unwrap();
-
-    let last_update_date =
-        chrono::NaiveDate::parse_from_str(&topic_message.last_update_date, "%Y-%m-%d").unwrap();
 
     let new_update_date =
         chrono::NaiveDate::parse_from_str(&topic_message.new_update_date, "%Y-%m-%d").unwrap();
@@ -70,6 +75,21 @@ async fn function_handler(
         .await
         .unwrap();
 
+    let route_json_string = serde_json::to_string(&route_json).unwrap();
+    let route_json_byte_stream = ByteStream::from(route_json_string.into_bytes());
+
+    s3_client
+        .put_object()
+        .bucket(env::var("RAW_DATA_BUCKET").expect("Missing RAW_DATA_BUCKET"))
+        .key(format!(
+            "raw/{}/citybus/route-list/route-list.json",
+            new_update_date
+        ))
+        .body(route_json_byte_stream)
+        .send()
+        .await
+        .expect("Failed to save data to S3");
+
     let mut futs = futures::stream::FuturesUnordered::new();
     let mut tasks = vec![];
 
@@ -79,14 +99,7 @@ async fn function_handler(
             let s3_client_clone = s3_client.clone();
             let route_clone = route.clone();
             let direction_clone = direction.to_string();
-
-            let date_time = chrono::DateTime::parse_from_rfc3339(&route.data_timestamp)
-                .unwrap()
-                .date_naive();
-
-            if date_time < last_update_date {
-                continue;
-            }
+            let sns_client_clone = sns_client.clone();
 
             let fut = task::spawn(async move {
                 let route_stop_response = http_client_clone
@@ -105,6 +118,40 @@ async fn function_handler(
 
                 if route_stop_json.data.is_empty() {
                     return;
+                }
+
+                for route_stop in &route_stop_json.data {
+                    let get_citybus_stop_message_attribute_value = MessageAttributeValue::builder()
+                        .set_data_type(Some("String".to_string()))
+                        .set_string_value(Some("generic-crawler".to_string()))
+                        .build()
+                        .unwrap();
+
+                    let get_citybus_stop_message = GenericCrawlerMessage {
+                        url: format!(
+                            "https://rt.data.gov.hk/v2/transport/citybus/stop/{}",
+                            route_stop.stop
+                        ),
+                        s3_bucket: env::var("RAW_DATA_BUCKET").expect("Missing RAW_DATA_BUCKET"),
+                        s3_key: format!(
+                            "raw/{}/citybus/stop/{}.json",
+                            new_update_date, route_stop.stop
+                        ),
+                    };
+
+                    let get_citybus_stop_json = serde_json::to_string(&get_citybus_stop_message)
+                        .expect("Failed to serialize data");
+
+                    let _ = sns_client_clone
+                        .publish()
+                        .topic_arn(
+                            env::var("UPDATE_DATA_TOPIC_ARN").expect("Missing SNS_TOPIC_ARN"),
+                        )
+                        .message_attributes("type", get_citybus_stop_message_attribute_value)
+                        .message(get_citybus_stop_json)
+                        .send()
+                        .await
+                        .expect("Failed to send message to SNS");
                 }
 
                 let json =
@@ -148,8 +195,11 @@ async fn main() -> Result<(), Error> {
     let s3_client = aws_sdk_s3::Client::new(&config);
     let shared_s3_client = &s3_client;
 
+    let sns_client = aws_sdk_sns::Client::new(&config);
+    let shared_sns_client = &sns_client;
+
     run(service_fn(move |event| async move {
-        function_handler(event, &shared_s3_client).await
+        function_handler(event, &shared_s3_client, shared_sns_client).await
     }))
     .await
 }
