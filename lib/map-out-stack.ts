@@ -107,7 +107,7 @@ export class MapOutStack extends cdk.Stack {
           RAW_DATA_BUCKET: rawDataBucket.bucketName,
           DYNAMODB_TABLE_NAME: dynamodbTable.tableName,
         },
-        timeout: cdk.Duration.minutes(15),
+        timeout: cdk.Duration.minutes(3),
       }
     );
     rawDataBucket.grantWrite(crawlCitybusRouteStopFunction);
@@ -123,6 +123,36 @@ export class MapOutStack extends cdk.Stack {
           },
         }
       )
+    );
+
+    const genericCrawlerFunction = new RustFunction(
+      this,
+      "MapOutGenericCrawlerFunction",
+      {
+        manifestPath: path.join(
+          __dirname,
+          "..",
+          "lambdas",
+          "generic-crawler",
+          "Cargo.toml"
+        ),
+        architecture: cdk.aws_lambda.Architecture.ARM_64,
+        environment: {
+          RAW_DATA_BUCKET: rawDataBucket.bucketName,
+          DYNAMODB_TABLE_NAME: dynamodbTable.tableName,
+        },
+        timeout: cdk.Duration.minutes(1),
+      }
+    );
+    rawDataBucket.grantWrite(genericCrawlerFunction);
+    updateDataTopic.addSubscription(
+      new cdk.aws_sns_subscriptions.LambdaSubscription(genericCrawlerFunction, {
+        filterPolicy: {
+          type: cdk.aws_sns.SubscriptionFilter.stringFilter({
+            allowlist: ["generic-crawler"],
+          }),
+        },
+      })
     );
 
     const hostingBucket = new cdk.aws_s3.Bucket(this, "MapOutHostingBucket", {

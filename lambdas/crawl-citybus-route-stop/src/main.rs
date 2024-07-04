@@ -53,18 +53,11 @@ async fn function_handler(
     let topic_message: TopicMessage =
         serde_json::from_str(&event.payload.records[0].sns.message).unwrap();
 
-    println!("Last update date: {}", topic_message.last_update_date);
-    println!("New update date: {}", topic_message.new_update_date);
-
     let last_update_date =
         chrono::NaiveDate::parse_from_str(&topic_message.last_update_date, "%Y-%m-%d").unwrap();
 
     let new_update_date =
         chrono::NaiveDate::parse_from_str(&topic_message.new_update_date, "%Y-%m-%d").unwrap();
-
-    for record in event.payload.records {
-        println!("Record: {}", record.sns.message);
-    }
 
     let route_response = http_client
         .get("https://rt.data.gov.hk/v2/transport/citybus/route/ctb")
@@ -111,10 +104,6 @@ async fn function_handler(
                     .expect("Failed to parse route stop data");
 
                 if route_stop_json.data.is_empty() {
-                    println!(
-                        "No data for route {} ({})",
-                        route_clone.route, direction_clone
-                    );
                     return;
                 }
 
@@ -126,7 +115,7 @@ async fn function_handler(
                     .put_object()
                     .bucket(env::var("RAW_DATA_BUCKET").expect("Missing RAW_DATA_BUCKET"))
                     .key(format!(
-                        "raw/td/routes-fares/{}/route-stop-{}-{}.json",
+                        "raw/{}/citybus/route-stop/{}-{}.json",
                         new_update_date, route_clone.route, direction_clone
                     ))
                     .body(json_byte_stream)
