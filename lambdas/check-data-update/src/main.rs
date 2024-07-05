@@ -73,7 +73,8 @@ async fn function_handler(
                     AttributeValue::S(new_update_date_string.to_string()),
                 )
                 .send()
-                .await;
+                .await
+                .unwrap();
 
             "2024-01-01"
         }

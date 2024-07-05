@@ -158,6 +158,75 @@ export class MapOutStack extends cdk.Stack {
       })
     );
 
+    const glueDatabaseName = "map_out";
+
+    const glueIamPolicy = new cdk.aws_iam.Policy(this, "MapOutGlueIamPolicy", {
+      statements: [
+        new cdk.aws_iam.PolicyStatement({
+          actions: ["s3:GetObject", "s3:PutObject"],
+          resources: [rawDataBucket.bucketArn, processedDataBucket.bucketArn],
+        }),
+        new cdk.aws_iam.PolicyStatement({
+          actions: [
+            "dynamodb:BatchWriteItem",
+            "dynamodb:PutItem",
+            "dynamodb:UpdateItem",
+            "dynamodb:DeleteItem",
+          ],
+          resources: [dynamodbTable.tableArn],
+        }),
+        new cdk.aws_iam.PolicyStatement({
+          actions: ["sns:Publish"],
+          resources: [updateDataTopic.topicArn],
+        }),
+        new cdk.aws_iam.PolicyStatement({
+          actions: ["glue:*"],
+          resources: ["*"],
+        }),
+      ],
+    });
+
+    const glueIamRole = new cdk.aws_iam.Role(this, "MapOutGlueIamRole", {
+      assumedBy: new cdk.aws_iam.ServicePrincipal("glue.amazonaws.com"),
+      managedPolicies: [
+        cdk.aws_iam.ManagedPolicy.fromManagedPolicyName(
+          this,
+          "AWSGlueServiceRole",
+          glueIamPolicy.policyName
+        ),
+      ],
+    });
+
+    glueIamPolicy.attachToRole(glueIamRole);
+
+    const glueDatebase = new cdk.aws_glue.CfnDatabase(
+      this,
+      "MapOutGlueDatabase",
+      { catalogId: this.account, databaseInput: { name: glueDatabaseName } }
+    );
+
+    const rawDataCrawlerClassifier = new cdk.aws_glue.CfnClassifier(
+      this,
+      "MapOutDataCrawlerClassifier",
+      {
+        jsonClassifier: {
+          name: "map-out-raw-data-crawler-classifier",
+          jsonPath: "$.data[*]",
+        },
+      }
+    );
+
+    const rawFeaturesCrawlerClassifier = new cdk.aws_glue.CfnClassifier(
+      this,
+      "MapOutFeaturesCrawlerClassifier",
+      {
+        jsonClassifier: {
+          name: "map-out-raw-features-crawler-classifier",
+          jsonPath: "$.features[*]",
+        },
+      }
+    );
+
     const hostingBucket = new cdk.aws_s3.Bucket(this, "MapOutHostingBucket", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
