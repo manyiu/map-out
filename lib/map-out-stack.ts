@@ -166,35 +166,11 @@ export class MapOutStack extends cdk.Stack {
           actions: ["s3:GetObject", "s3:PutObject"],
           resources: [rawDataBucket.bucketArn, processedDataBucket.bucketArn],
         }),
-        new cdk.aws_iam.PolicyStatement({
-          actions: [
-            "dynamodb:BatchWriteItem",
-            "dynamodb:PutItem",
-            "dynamodb:UpdateItem",
-            "dynamodb:DeleteItem",
-          ],
-          resources: [dynamodbTable.tableArn],
-        }),
-        new cdk.aws_iam.PolicyStatement({
-          actions: ["sns:Publish"],
-          resources: [updateDataTopic.topicArn],
-        }),
-        new cdk.aws_iam.PolicyStatement({
-          actions: ["glue:*"],
-          resources: ["*"],
-        }),
       ],
     });
 
     const glueIamRole = new cdk.aws_iam.Role(this, "MapOutGlueIamRole", {
       assumedBy: new cdk.aws_iam.ServicePrincipal("glue.amazonaws.com"),
-      managedPolicies: [
-        cdk.aws_iam.ManagedPolicy.fromManagedPolicyName(
-          this,
-          "AWSGlueServiceRole",
-          glueIamPolicy.policyName
-        ),
-      ],
     });
 
     glueIamPolicy.attachToRole(glueIamRole);
