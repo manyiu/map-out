@@ -19,12 +19,17 @@ export class MapOutStack extends cdk.Stack {
       autoDeleteObjects: true,
     });
 
-    const processedDataBucket = new cdk.aws_s3.Bucket(
+    const processingDataBucket = new cdk.aws_s3.Bucket(
       this,
-      "MapOutProcessedDataBucket",
+      "MapOutProcessingDataBucket",
       {
         removalPolicy: cdk.RemovalPolicy.DESTROY,
         autoDeleteObjects: true,
+        lifecycleRules: [
+          {
+            expiration: cdk.Duration.days(1),
+          },
+        ],
       }
     );
 
@@ -70,7 +75,7 @@ export class MapOutStack extends cdk.Stack {
         timeout: cdk.Duration.seconds(5),
       }
     );
-    dynamodbTable.grantReadData(checkDataUpdateFunction);
+    dynamodbTable.grantReadWriteData(checkDataUpdateFunction);
     updateDataTopic.grantPublish(checkDataUpdateFunction);
 
     const checkDataUpdateFunctionInvokeTarget = new LambdaInvoke(
@@ -158,13 +163,42 @@ export class MapOutStack extends cdk.Stack {
       })
     );
 
+    const copyRawToProcessingFunction = new RustFunction(
+      this,
+      "MapOutCopyRawToProcessingFunction",
+      {
+        manifestPath: path.join(
+          __dirname,
+          "..",
+          "lambdas",
+          "copy-raw-to-processing",
+          "Cargo.toml"
+        ),
+        architecture: cdk.aws_lambda.Architecture.ARM_64,
+        environment: {
+          RAW_DATA_BUCKET: rawDataBucket.bucketName,
+          PROCESSING_DATA_BUCKET: processingDataBucket.bucketName,
+        },
+        timeout: cdk.Duration.minutes(1),
+      }
+    );
+    rawDataBucket.grantRead(copyRawToProcessingFunction);
+    processingDataBucket.grantWrite(copyRawToProcessingFunction);
+    rawDataBucket.addEventNotification(
+      cdk.aws_s3.EventType.OBJECT_CREATED,
+      new cdk.aws_s3_notifications.LambdaDestination(
+        copyRawToProcessingFunction
+      ),
+      { prefix: "bus/" }
+    );
+
     const glueDatabaseName = "map_out";
 
     const glueIamPolicy = new cdk.aws_iam.Policy(this, "MapOutGlueIamPolicy", {
       statements: [
         new cdk.aws_iam.PolicyStatement({
           actions: ["s3:GetObject", "s3:PutObject"],
-          resources: [rawDataBucket.bucketArn, processedDataBucket.bucketArn],
+          resources: [rawDataBucket.bucketArn, processingDataBucket.bucketArn],
         }),
       ],
     });

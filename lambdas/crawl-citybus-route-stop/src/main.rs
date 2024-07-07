@@ -1,9 +1,14 @@
 use aws_config::BehaviorVersion;
 use aws_lambda_events::sns::SnsEvent;
+use aws_sdk_dynamodb::types::AttributeValue;
 use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_sns::types::MessageAttributeValue;
 use futures::StreamExt;
-use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
+use lambda_runtime::{
+    run, service_fn,
+    tracing::{self},
+    Error, LambdaEvent,
+};
 use serde::{Deserialize, Serialize};
 use std::env;
 use tokio::task;
@@ -18,6 +23,8 @@ struct GenericCrawlerMessage {
     url: String,
     s3_bucket: String,
     s3_key: String,
+    dynamodb_pk: String,
+    dynamodb_sk: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -54,15 +61,13 @@ struct RouteStopData {
 async fn function_handler(
     event: LambdaEvent<SnsEvent>,
     s3_client: &aws_sdk_s3::Client,
+    dynamodb_client: &aws_sdk_dynamodb::Client,
     sns_client: &aws_sdk_sns::Client,
 ) -> Result<(), Error> {
     let http_client = reqwest::Client::new();
 
     let topic_message: TopicMessage =
         serde_json::from_str(&event.payload.records[0].sns.message).unwrap();
-
-    let new_update_date =
-        chrono::NaiveDate::parse_from_str(&topic_message.new_update_date, "%Y-%m-%d").unwrap();
 
     let route_response = http_client
         .get("https://rt.data.gov.hk/v2/transport/citybus/route/ctb")
@@ -82,8 +87,8 @@ async fn function_handler(
         .put_object()
         .bucket(env::var("RAW_DATA_BUCKET").expect("Missing RAW_DATA_BUCKET"))
         .key(format!(
-            "raw/{}/citybus/route-list/route-list.json",
-            new_update_date
+            "bus/{}/citybus/route-list/route-list.json",
+            topic_message.new_update_date
         ))
         .body(route_json_byte_stream)
         .send()
@@ -100,6 +105,8 @@ async fn function_handler(
             let route_clone = route.clone();
             let direction_clone = direction.to_string();
             let sns_client_clone = sns_client.clone();
+            let new_update_date = topic_message.new_update_date.clone();
+            let dynamodb_client_clone = dynamodb_client.clone();
 
             let fut = task::spawn(async move {
                 let route_stop_response = http_client_clone
@@ -108,10 +115,39 @@ async fn function_handler(
                         route_clone.route, direction_clone
                     ))
                     .send()
-                    .await
-                    .expect("Failed to get route stop data");
+                    .await;
+
+                if route_stop_response.is_err() {
+                    let _ = dynamodb_client_clone
+                        .update_item()
+                        .table_name(env::var("DYNAMODB_TABLE_NAME").unwrap())
+                        .key(
+                            "pk",
+                            AttributeValue::S("#TD_ROUTES_FARES_GEOJSON#UPDATE".to_string()),
+                        )
+                        .key(
+                            "sk",
+                            AttributeValue::S(format!("#UPDATE_DATE#{}", new_update_date)),
+                        )
+                        .update_expression("SET #STATUS = :status AND append_list(#ERRORS, :error)")
+                        .expression_attribute_names("#STATUS", "stopped")
+                        .expression_attribute_values(":status", AttributeValue::Bool(true))
+                        .expression_attribute_names("#ERRORS", "error")
+                        .expression_attribute_values(
+                            ":error",
+                            AttributeValue::S(route_stop_response.err().unwrap().to_string()),
+                        )
+                        .send()
+                        .await;
+
+                    panic!(
+                        "Failed to fetch route stop data for route {} and direction {}",
+                        route_clone.route, direction_clone
+                    );
+                }
 
                 let route_stop_json = route_stop_response
+                    .unwrap()
                     .json::<ResponseWrapper<RouteStopData>>()
                     .await
                     .expect("Failed to parse route stop data");
@@ -134,9 +170,11 @@ async fn function_handler(
                         ),
                         s3_bucket: env::var("RAW_DATA_BUCKET").expect("Missing RAW_DATA_BUCKET"),
                         s3_key: format!(
-                            "raw/{}/citybus/stop/{}.json",
+                            "bus/{}/citybus/stop/{}.json",
                             new_update_date, route_stop.stop
                         ),
+                        dynamodb_pk: "#TD_ROUTES_FARES_GEOJSON#UPDATE".to_string(),
+                        dynamodb_sk: format!("#UPDATE_DATE#{}", new_update_date),
                     };
 
                     let get_citybus_stop_json = serde_json::to_string(&get_citybus_stop_message)
@@ -162,7 +200,7 @@ async fn function_handler(
                     .put_object()
                     .bucket(env::var("RAW_DATA_BUCKET").expect("Missing RAW_DATA_BUCKET"))
                     .key(format!(
-                        "raw/{}/citybus/route-stop/{}-{}.json",
+                        "bus/{}/citybus/route-stop/{}-{}.json",
                         new_update_date, route_clone.route, direction_clone
                     ))
                     .body(json_byte_stream)
@@ -195,11 +233,20 @@ async fn main() -> Result<(), Error> {
     let s3_client = aws_sdk_s3::Client::new(&config);
     let shared_s3_client = &s3_client;
 
+    let dynamodb_client = aws_sdk_dynamodb::Client::new(&config);
+    let shared_dynamodb_client = &dynamodb_client;
+
     let sns_client = aws_sdk_sns::Client::new(&config);
     let shared_sns_client = &sns_client;
 
     run(service_fn(move |event| async move {
-        function_handler(event, &shared_s3_client, shared_sns_client).await
+        function_handler(
+            event,
+            &shared_s3_client,
+            &shared_dynamodb_client,
+            shared_sns_client,
+        )
+        .await
     }))
     .await
 }

@@ -16,6 +16,7 @@ edition = "2021"
 
 [dependencies]
 aws-config = "1.5.3"
+aws-sdk-dynamodb = "1.37.0"
 aws-sdk-s3 = "1.39.0"
 aws_lambda_events = { version = "0.15.1", default-features = false, features = ["sns"] }
 
