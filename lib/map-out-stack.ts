@@ -33,6 +33,15 @@ export class MapOutStack extends cdk.Stack {
       }
     );
 
+    const processedDataBucket = new cdk.aws_s3.Bucket(
+      this,
+      "MapOutProcessedDataBucket",
+      {
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+        autoDeleteObjects: true,
+      }
+    );
+
     const dynamodbTable = new cdk.aws_dynamodb.Table(
       this,
       "MapOutDynamoDBTable",
@@ -72,7 +81,7 @@ export class MapOutStack extends cdk.Stack {
           UPDATE_DATA_TOPIC_ARN: updateDataTopic.topicArn,
           RAW_DATA_BUCKET: rawDataBucket.bucketName,
         },
-        timeout: cdk.Duration.seconds(5),
+        timeout: cdk.Duration.minutes(1),
       }
     );
     dynamodbTable.grantReadWriteData(checkDataUpdateFunction);
@@ -97,6 +106,42 @@ export class MapOutStack extends cdk.Stack {
       target: checkDataUpdateFunctionInvokeTarget,
     });
 
+    const crawlTdRoutesFaresGeojsonFunction = new RustFunction(
+      this,
+      "MapOutCrawlTdRoutesFaresGeojsonFunction",
+      {
+        manifestPath: path.join(
+          __dirname,
+          "..",
+          "lambdas",
+          "crawl-td-routes-fares-geojson",
+          "Cargo.toml"
+        ),
+        architecture: cdk.aws_lambda.Architecture.ARM_64,
+        environment: {
+          RAW_DATA_BUCKET: rawDataBucket.bucketName,
+          DYNAMODB_TABLE_NAME: dynamodbTable.tableName,
+          UPDATE_DATA_TOPIC_ARN: updateDataTopic.topicArn,
+        },
+        timeout: cdk.Duration.minutes(3),
+        memorySize: 512,
+      }
+    );
+    dynamodbTable.grantWriteData(crawlTdRoutesFaresGeojsonFunction);
+    rawDataBucket.grantWrite(crawlTdRoutesFaresGeojsonFunction);
+    updateDataTopic.addSubscription(
+      new cdk.aws_sns_subscriptions.LambdaSubscription(
+        crawlTdRoutesFaresGeojsonFunction,
+        {
+          filterPolicy: {
+            type: cdk.aws_sns.SubscriptionFilter.stringFilter({
+              allowlist: ["init-update-data"],
+            }),
+          },
+        }
+      )
+    );
+
     const crawlCitybusRouteStopFunction = new RustFunction(
       this,
       "MapOutCrawlCitybusRouteStopFunction",
@@ -118,7 +163,7 @@ export class MapOutStack extends cdk.Stack {
       }
     );
     rawDataBucket.grantWrite(crawlCitybusRouteStopFunction);
-    dynamodbTable.grantReadData(crawlCitybusRouteStopFunction);
+    dynamodbTable.grantWriteData(crawlCitybusRouteStopFunction);
     updateDataTopic.grantPublish(crawlCitybusRouteStopFunction);
     updateDataTopic.addSubscription(
       new cdk.aws_sns_subscriptions.LambdaSubscription(
@@ -149,7 +194,7 @@ export class MapOutStack extends cdk.Stack {
           RAW_DATA_BUCKET: rawDataBucket.bucketName,
           DYNAMODB_TABLE_NAME: dynamodbTable.tableName,
         },
-        timeout: cdk.Duration.minutes(1),
+        timeout: cdk.Duration.minutes(5),
       }
     );
     rawDataBucket.grantWrite(genericCrawlerFunction);
@@ -198,13 +243,22 @@ export class MapOutStack extends cdk.Stack {
       statements: [
         new cdk.aws_iam.PolicyStatement({
           actions: ["s3:GetObject", "s3:PutObject"],
-          resources: [rawDataBucket.bucketArn, processingDataBucket.bucketArn],
+          resources: [
+            `${rawDataBucket.bucketArn}/*`,
+            `${processingDataBucket.bucketArn}/*`,
+            `${processedDataBucket.bucketArn}/*`,
+          ],
         }),
       ],
     });
 
     const glueIamRole = new cdk.aws_iam.Role(this, "MapOutGlueIamRole", {
       assumedBy: new cdk.aws_iam.ServicePrincipal("glue.amazonaws.com"),
+      managedPolicies: [
+        cdk.aws_iam.ManagedPolicy.fromAwsManagedPolicyName(
+          "service-role/AWSGlueServiceRole"
+        ),
+      ],
     });
 
     glueIamPolicy.attachToRole(glueIamRole);
@@ -233,6 +287,50 @@ export class MapOutStack extends cdk.Stack {
         jsonClassifier: {
           name: "map-out-raw-features-crawler-classifier",
           jsonPath: "$.features[*]",
+        },
+      }
+    );
+
+    const tdRoutesFaresGeojsonBusTable = new cdk.aws_glue.CfnTable(
+      this,
+      "MapOutTdRoutesFaresGeojsonBusTable",
+      {
+        databaseName: glueDatabaseName,
+        catalogId: this.account,
+        tableInput: {
+          name: "td_routes_fares_geojson_bus",
+          parameters: {
+            jsonPath: "$.features[*]",
+            compressionType: "none",
+            classification: "json",
+            typeOfData: "file",
+          },
+          storageDescriptor: {
+            columns: [
+              {
+                name: "type",
+                type: "string",
+              },
+              {
+                name: "geometry",
+                type: "struct<type:string,coordinates:array<double>>",
+              },
+              {
+                name: "properties",
+                type: "struct<routeId:int,companyCode:string,district:string,routeNameC:string,routeNameS:string,routeNameE:string,routeType:int,serviceMode:string,specialType:int,journeyTime:int,locStartNameC:string,locStartNameS:string,locStartNameE:string,locEndNameC:string,locEndNameS:string,locEndNameE:string,hyperlinkC:string,hyperlinkS:string,hyperlinkE:string,fullFare:double,lastUpdateDate:string,routeSeq:int,stopSeq:int,stopId:int,stopPickDrop:int,stopNameC:string,stopNameS:string,stopNameE:string>",
+              },
+            ],
+            location: `s3://${processingDataBucket.bucketName}/td/routes-fares/feature-collection/bus.json`,
+            inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
+            outputFormat:
+              "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+            serdeInfo: {
+              serializationLibrary: "org.openx.data.jsonserde.JsonSerDe",
+              parameters: {
+                paths: "type,geometry,properties",
+              },
+            },
+          },
         },
       }
     );

@@ -120,34 +120,6 @@ async fn function_handler(
         .await
         .unwrap();
 
-    let get_td_routes_fares_message_attribute_value = MessageAttributeValue::builder()
-        .set_data_type(Some("String".to_string()))
-        .set_string_value(Some("generic-crawler".to_string()))
-        .build()
-        .unwrap();
-
-    let get_td_routes_fares_message = GenericCrawlerMessage {
-        url: "https://static.data.gov.hk/td/routes-fares-geojson/JSON_BUS.json".to_string(),
-        s3_bucket: env::var("RAW_DATA_BUCKET").unwrap(),
-        s3_key: format!(
-            "bus/{}/td/routes-fares/feature-collection/bus.json",
-            new_update_date_string
-        ),
-        dynamodb_pk: "#TD_ROUTES_FARES_GEOJSON#UPDATE".to_string(),
-        dynamodb_sk: format!("#UPDATE_DATE#{}", new_update_date_string),
-    };
-
-    let get_td_routes_fares_json = serde_json::to_string(&get_td_routes_fares_message).unwrap();
-
-    let _ = sns_client
-        .publish()
-        .topic_arn(env::var("UPDATE_DATA_TOPIC_ARN").unwrap())
-        .message_attributes("type", get_td_routes_fares_message_attribute_value)
-        .message(get_td_routes_fares_json)
-        .send()
-        .await
-        .unwrap();
-
     let get_kmb_route_stop_list_message_attribute_value = MessageAttributeValue::builder()
         .set_data_type(Some("String".to_string()))
         .set_string_value(Some("generic-crawler".to_string()))

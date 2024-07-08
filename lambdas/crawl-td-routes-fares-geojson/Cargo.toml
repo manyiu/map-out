@@ -1,5 +1,5 @@
 [package]
-name = "generic-crawler"
+name = "crawl-td-routes-fares-geojson"
 version = "0.1.0"
 edition = "2021"
 
@@ -15,15 +15,15 @@ edition = "2021"
 # and it will keep the alphabetic ordering for you.
 
 [dependencies]
-aws-config = "1.5.3"
+aws-config = "1.5.4"
 aws-sdk-dynamodb = "1.37.0"
-aws-sdk-s3 = "1.39.0"
+aws-sdk-s3 = "1.40.0"
 aws_lambda_events = { version = "0.15.1", default-features = false, features = ["sns"] }
 
 lambda_runtime = "0.12.0"
 openssl = { version = "0.10.64", features = ["vendored"] }
 reqwest = "0.12.5"
-serde = "1.0.203"
+serde = "1.0.204"
 serde_json = "1.0.120"
 tokio = { version = "1", features = ["macros"] }
 

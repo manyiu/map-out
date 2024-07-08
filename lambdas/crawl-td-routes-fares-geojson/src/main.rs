@@ -1,4 +1,3 @@
-use core::panic;
 use std::env;
 
 use aws_config::BehaviorVersion;
@@ -10,11 +9,7 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 struct TopicMessage {
-    url: String,
-    s3_bucket: String,
-    s3_key: String,
-    dynamodb_pk: String,
-    dynamodb_sk: String,
+    new_update_date: String,
 }
 
 async fn function_handler(
@@ -26,14 +21,23 @@ async fn function_handler(
 
     let http_client = reqwest::Client::new();
 
-    let response = http_client.get(&topic_message.url).send().await;
+    let response = http_client
+        .get("https://static.data.gov.hk/td/routes-fares-geojson/JSON_BUS.json")
+        .send()
+        .await;
 
     if response.as_ref().is_err() {
         let _ = dynamodb_client
             .update_item()
             .table_name(env::var("DYNAMODB_TABLE_NAME").unwrap())
-            .key("pk", AttributeValue::S(topic_message.dynamodb_pk))
-            .key("sk", AttributeValue::S(topic_message.dynamodb_sk))
+            .key(
+                "pk",
+                AttributeValue::S("#TD_ROUTES_FARES_GEOJSON#UPDATE".to_string()),
+            )
+            .key(
+                "sk",
+                AttributeValue::S(format!("#UPDATE_DATE#{}", topic_message.new_update_date)),
+            )
             .update_expression("SET #STATUS = :status AND append_list(#ERRORS, :error)")
             .expression_attribute_names("#STATUS", "stopped")
             .expression_attribute_values(":status", AttributeValue::Bool(true))
@@ -45,21 +49,24 @@ async fn function_handler(
             .send()
             .await;
 
-        panic!("Failed to fetch URL, url: {}", topic_message.url);
+        panic!("Failed to fetch TD Routes Fares GeoJSON JSON_BUS.json");
     }
 
-    let body = response.unwrap().bytes().await.unwrap();
+    let body = response.unwrap().bytes().await?;
 
     let body_byte_stream = ByteStream::from(body);
 
     s3_client
         .put_object()
-        .bucket(&topic_message.s3_bucket)
-        .key(topic_message.s3_key)
+        .bucket(env::var("RAW_DATA_BUCKET").unwrap())
+        .key(format!(
+            "bus/{}/td/routes-fares/feature-collection/bus.json",
+            topic_message.new_update_date
+        ))
         .body(body_byte_stream)
         .send()
         .await
-        .expect("Failed to put object in S3");
+        .expect("Failed to put TD Routes Fares GeoJSON JSON_BUS.json in S3");
 
     Ok(())
 }
