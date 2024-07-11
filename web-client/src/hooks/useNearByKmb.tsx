@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { RouteKmb, StopKmb } from "../repositories/types";
+import { RouteKmb, StopKmb } from "../database/types";
 import worker from "../workers";
 
 const useNearByKmb = () => {

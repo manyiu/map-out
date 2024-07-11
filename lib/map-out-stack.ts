@@ -64,15 +64,15 @@ export class MapOutStack extends cdk.Stack {
       }
     );
 
-    const checkDataUpdateFunction = new RustFunction(
+    const initDataUpdateFunction = new RustFunction(
       this,
-      "MapOutCheckDataUpdateFunction",
+      "MapOutInitDataUpdateFunction",
       {
         manifestPath: path.join(
           __dirname,
           "..",
           "lambdas",
-          "check-data-update",
+          "init-data-update",
           "Cargo.toml"
         ),
         architecture: cdk.aws_lambda.Architecture.ARM_64,
@@ -84,17 +84,17 @@ export class MapOutStack extends cdk.Stack {
         timeout: cdk.Duration.minutes(1),
       }
     );
-    dynamodbTable.grantReadWriteData(checkDataUpdateFunction);
-    updateDataTopic.grantPublish(checkDataUpdateFunction);
+    dynamodbTable.grantWriteData(initDataUpdateFunction);
+    updateDataTopic.grantPublish(initDataUpdateFunction);
 
-    const checkDataUpdateFunctionInvokeTarget = new LambdaInvoke(
-      checkDataUpdateFunction,
+    const initDataUpdateFunctionInvokeTarget = new LambdaInvoke(
+      initDataUpdateFunction,
       {
         retryAttempts: 5,
       }
     );
 
-    new Schedule(this, "MapOutDataCheckSchedule", {
+    new Schedule(this, "MapOutInitDataUpdateSchedule", {
       schedule: ScheduleExpression.cron({
         timeZone: cdk.TimeZone.ASIA_HONG_KONG,
         minute: "0",
@@ -103,44 +103,8 @@ export class MapOutStack extends cdk.Stack {
         month: "*",
         year: "*",
       }),
-      target: checkDataUpdateFunctionInvokeTarget,
+      target: initDataUpdateFunctionInvokeTarget,
     });
-
-    const crawlTdRoutesFaresGeojsonFunction = new RustFunction(
-      this,
-      "MapOutCrawlTdRoutesFaresGeojsonFunction",
-      {
-        manifestPath: path.join(
-          __dirname,
-          "..",
-          "lambdas",
-          "crawl-td-routes-fares-geojson",
-          "Cargo.toml"
-        ),
-        architecture: cdk.aws_lambda.Architecture.ARM_64,
-        environment: {
-          RAW_DATA_BUCKET: rawDataBucket.bucketName,
-          DYNAMODB_TABLE_NAME: dynamodbTable.tableName,
-          UPDATE_DATA_TOPIC_ARN: updateDataTopic.topicArn,
-        },
-        timeout: cdk.Duration.minutes(3),
-        memorySize: 512,
-      }
-    );
-    dynamodbTable.grantWriteData(crawlTdRoutesFaresGeojsonFunction);
-    rawDataBucket.grantWrite(crawlTdRoutesFaresGeojsonFunction);
-    updateDataTopic.addSubscription(
-      new cdk.aws_sns_subscriptions.LambdaSubscription(
-        crawlTdRoutesFaresGeojsonFunction,
-        {
-          filterPolicy: {
-            type: cdk.aws_sns.SubscriptionFilter.stringFilter({
-              allowlist: ["init-update-data"],
-            }),
-          },
-        }
-      )
-    );
 
     const crawlCitybusRouteStopFunction = new RustFunction(
       this,
@@ -171,7 +135,7 @@ export class MapOutStack extends cdk.Stack {
         {
           filterPolicy: {
             type: cdk.aws_sns.SubscriptionFilter.stringFilter({
-              allowlist: ["init-update-data"],
+              allowlist: ["init-data-update"],
             }),
           },
         }
@@ -269,38 +233,16 @@ export class MapOutStack extends cdk.Stack {
       { catalogId: this.account, databaseInput: { name: glueDatabaseName } }
     );
 
-    const rawDataCrawlerClassifier = new cdk.aws_glue.CfnClassifier(
+    const citybusRouteTable = new cdk.aws_glue.CfnTable(
       this,
-      "MapOutDataCrawlerClassifier",
-      {
-        jsonClassifier: {
-          name: "map-out-raw-data-crawler-classifier",
-          jsonPath: "$.data[*]",
-        },
-      }
-    );
-
-    const rawFeaturesCrawlerClassifier = new cdk.aws_glue.CfnClassifier(
-      this,
-      "MapOutFeaturesCrawlerClassifier",
-      {
-        jsonClassifier: {
-          name: "map-out-raw-features-crawler-classifier",
-          jsonPath: "$.features[*]",
-        },
-      }
-    );
-
-    const tdRoutesFaresGeojsonBusTable = new cdk.aws_glue.CfnTable(
-      this,
-      "MapOutTdRoutesFaresGeojsonBusTable",
+      "MapOutCitybusRouteTable",
       {
         databaseName: glueDatabaseName,
         catalogId: this.account,
         tableInput: {
-          name: "td_routes_fares_geojson_bus",
+          name: "map_out-citybus_route",
           parameters: {
-            jsonPath: "$.features[*]",
+            jsonPath: "$.data[*]",
             compressionType: "none",
             classification: "json",
             typeOfData: "file",
@@ -308,26 +250,340 @@ export class MapOutStack extends cdk.Stack {
           storageDescriptor: {
             columns: [
               {
-                name: "type",
+                name: "co",
                 type: "string",
               },
               {
-                name: "geometry",
-                type: "struct<type:string,coordinates:array<double>>",
+                name: "route",
+                type: "string",
               },
               {
-                name: "properties",
-                type: "struct<routeId:int,companyCode:string,district:string,routeNameC:string,routeNameS:string,routeNameE:string,routeType:int,serviceMode:string,specialType:int,journeyTime:int,locStartNameC:string,locStartNameS:string,locStartNameE:string,locEndNameC:string,locEndNameS:string,locEndNameE:string,hyperlinkC:string,hyperlinkS:string,hyperlinkE:string,fullFare:double,lastUpdateDate:string,routeSeq:int,stopSeq:int,stopId:int,stopPickDrop:int,stopNameC:string,stopNameS:string,stopNameE:string>",
+                name: "orig_tc",
+                type: "string",
+              },
+              {
+                name: "orig_en",
+                type: "string",
+              },
+              {
+                name: "dest_tc",
+                type: "string",
+              },
+              {
+                name: "dest_en",
+                type: "string",
+              },
+              {
+                name: "orig_sc",
+                type: "string",
+              },
+              {
+                name: "dest_sc",
+                type: "string",
+              },
+              {
+                name: "data_timestamp",
+                type: "string",
               },
             ],
-            location: `s3://${processingDataBucket.bucketName}/td/routes-fares/feature-collection/bus.json`,
+            location: `s3://${processingDataBucket.bucketName}/bus/citybus/route/`,
             inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
             outputFormat:
               "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
             serdeInfo: {
               serializationLibrary: "org.openx.data.jsonserde.JsonSerDe",
               parameters: {
-                paths: "type,geometry,properties",
+                paths:
+                  "co,route,orig_tc,orig_en,dest_tc,dest_en,orig_sc,dest_sc,data_timestamp",
+              },
+            },
+          },
+        },
+      }
+    );
+
+    const citybusStopTable = new cdk.aws_glue.CfnTable(
+      this,
+      "MapOutCitybusStopTable",
+      {
+        databaseName: glueDatabaseName,
+        catalogId: this.account,
+        tableInput: {
+          name: "map_out-citybus_stop",
+          parameters: {
+            jsonPath: "$.data",
+            compressionType: "none",
+            classification: "json",
+            typeOfData: "file",
+          },
+          storageDescriptor: {
+            columns: [
+              {
+                name: "data_timestamp",
+                type: "string",
+              },
+              {
+                name: "lat",
+                type: "string",
+              },
+              {
+                name: "long",
+                type: "string",
+              },
+              {
+                name: "name_en",
+                type: "string",
+              },
+              {
+                name: "name_sc",
+                type: "string",
+              },
+              {
+                name: "name_tc",
+                type: "string",
+              },
+              {
+                name: "stop",
+                type: "string",
+              },
+            ],
+            location: `s3://${processingDataBucket.bucketName}/bus/citybus/stop/`,
+            inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
+            outputFormat:
+              "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+            serdeInfo: {
+              serializationLibrary: "org.openx.data.jsonserde.JsonSerDe",
+              parameters: {
+                paths: "data_timestamp,lat,long,name_en,name_sc,name_tc,stop",
+              },
+            },
+          },
+        },
+      }
+    );
+
+    const citybusRouteStopTable = new cdk.aws_glue.CfnTable(
+      this,
+      "MapOutCitybusRouteStopTable",
+      {
+        databaseName: glueDatabaseName,
+        catalogId: this.account,
+        tableInput: {
+          name: "map_out-citybus_route_stop",
+          parameters: {
+            jsonPath: "$.data[*]",
+            compressionType: "none",
+            classification: "json",
+            typeOfData: "file",
+          },
+          storageDescriptor: {
+            columns: [
+              {
+                name: "co",
+                type: "string",
+              },
+              {
+                name: "route",
+                type: "string",
+              },
+              {
+                name: "dir",
+                type: "string",
+              },
+              {
+                name: "seq",
+                type: "int",
+              },
+              {
+                name: "stop",
+                type: "string",
+              },
+              {
+                name: "data_timestamp",
+                type: "string",
+              },
+            ],
+            location: `s3://${processingDataBucket.bucketName}/bus/citybus/route-stop/`,
+            inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
+            outputFormat:
+              "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+            serdeInfo: {
+              serializationLibrary: "org.openx.data.jsonserde.JsonSerDe",
+              parameters: {
+                paths: "co,route,dir,seq,stop,data_timestamp",
+              },
+            },
+          },
+        },
+      }
+    );
+
+    const kmbRouteTable = new cdk.aws_glue.CfnTable(
+      this,
+      "MapOutKmbRouteTable",
+      {
+        databaseName: glueDatabaseName,
+        catalogId: this.account,
+        tableInput: {
+          name: "map_out-kmb_route",
+          parameters: {
+            jsonPath: "$.data[*]",
+            compressionType: "none",
+            classification: "json",
+            typeOfData: "file",
+          },
+          storageDescriptor: {
+            columns: [
+              {
+                name: "route",
+                type: "string",
+              },
+              {
+                name: "bound",
+                type: "string",
+              },
+              {
+                name: "service_type",
+                type: "string",
+              },
+              {
+                name: "orig_en",
+                type: "string",
+              },
+              {
+                name: "orig_tc",
+                type: "string",
+              },
+              {
+                name: "orig_sc",
+                type: "string",
+              },
+              {
+                name: "dest_en",
+                type: "string",
+              },
+              {
+                name: "dest_tc",
+                type: "string",
+              },
+              {
+                name: "dest_sc",
+                type: "string",
+              },
+            ],
+            location: `s3://${processingDataBucket.bucketName}/bus/kmb/route/`,
+            inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
+            outputFormat:
+              "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+            serdeInfo: {
+              serializationLibrary: "org.openx.data.jsonserde.JsonSerDe",
+              parameters: {
+                paths:
+                  "route,bound,service_type,orig_en,orig_tc,orig_sc,dest_en,dest_tc,dest_sc",
+              },
+            },
+          },
+        },
+      }
+    );
+
+    const kmbStopTable = new cdk.aws_glue.CfnTable(this, "MapOutKmbStopTable", {
+      databaseName: glueDatabaseName,
+      catalogId: this.account,
+      tableInput: {
+        name: "map_out-kmb_stop",
+        parameters: {
+          jsonPath: "$.data[*]",
+          compressionType: "none",
+          classification: "json",
+          typeOfData: "file",
+        },
+        storageDescriptor: {
+          columns: [
+            {
+              name: "stop",
+              type: "string",
+            },
+            {
+              name: "name_en",
+              type: "string",
+            },
+            {
+              name: "name_tc",
+              type: "string",
+            },
+            {
+              name: "name_sc",
+              type: "string",
+            },
+            {
+              name: "lat",
+              type: "string",
+            },
+            {
+              name: "long",
+              type: "string",
+            },
+          ],
+          location: `s3://${processingDataBucket.bucketName}/bus/kmb/stop/`,
+          inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
+          outputFormat:
+            "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+          serdeInfo: {
+            serializationLibrary: "org.openx.data.jsonserde.JsonSerDe",
+            parameters: {
+              paths: "stop,name_en,name_tc,name_sc,lat,long",
+            },
+          },
+        },
+      },
+    });
+
+    const kmbRouteStopTable = new cdk.aws_glue.CfnTable(
+      this,
+      "MapOutKmbRouteStopTable",
+      {
+        databaseName: glueDatabaseName,
+        catalogId: this.account,
+        tableInput: {
+          name: "map_out-kmb_route_stop",
+          parameters: {
+            jsonPath: "$.data[*]",
+            compressionType: "none",
+            classification: "json",
+            typeOfData: "file",
+          },
+          storageDescriptor: {
+            columns: [
+              {
+                name: "route",
+                type: "string",
+              },
+              {
+                name: "bound",
+                type: "string",
+              },
+              {
+                name: "service_type",
+                type: "string",
+              },
+              {
+                name: "seq",
+                type: "string",
+              },
+              {
+                name: "stop",
+                type: "string",
+              },
+            ],
+            location: `s3://${processingDataBucket.bucketName}/bus/kmb/route-stop/`,
+            inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
+            outputFormat:
+              "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+            serdeInfo: {
+              serializationLibrary: "org.openx.data.jsonserde.JsonSerDe",
+              parameters: {
+                paths: "route,bound,service_type,seq,stop",
               },
             },
           },

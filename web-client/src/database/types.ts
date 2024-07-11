@@ -3,7 +3,7 @@ import {
   RouteKmb as ApiRouteKmb,
   StopCitybus as ApiStopCitybus,
   StopKmb as ApiStopKmb,
-} from "../hooks/types";
+} from "../api/types";
 
 export interface RouteKmb extends ApiRouteKmb {}
 

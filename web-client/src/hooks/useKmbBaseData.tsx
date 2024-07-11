@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { DataWrapper, RouteKmb, RouteStopKmb, StopKmb } from "../api/types";
 import worker from "../workers";
-import { DataWrapper, RouteKmb, RouteStopKmb, StopKmb } from "./types";
 
 const ONE_WEEK = 1000 * 60 * 60 * 24 * 7;
 

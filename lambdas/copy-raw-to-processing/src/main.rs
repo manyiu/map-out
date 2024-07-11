@@ -11,12 +11,14 @@ async fn function_handler(
     for record in event.payload.records {
         let bucket = record.s3.bucket.name.unwrap();
         let key = record.s3.object.key.unwrap();
+        let re = regex::Regex::new(r"bus\/[0-9]+\/").unwrap();
+        let s3_key = re.replace(&key, "bus/");
 
         let _ = s3_client
             .copy_object()
             .copy_source(format!("{}/{}", bucket, key))
             .bucket(env::var("PROCESSING_DATA_BUCKET").unwrap())
-            .key(key["bus/YYYY-MM-DD/".len() as usize..].to_string())
+            .key(s3_key)
             .send()
             .await;
     }

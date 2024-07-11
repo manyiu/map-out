@@ -7,6 +7,10 @@ import { persister, queryClient } from "./repositories/queryClient";
 import theme from "./theme.ts";
 import "./workers";
 
+import { fetchWorker } from "./workers/index.ts";
+
+fetchWorker.postMessage({ type: "fetch::kmb" });
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ChakraProvider theme={theme}>

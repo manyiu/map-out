@@ -15,7 +15,7 @@ use tokio::task;
 
 #[derive(Deserialize, Debug)]
 struct TopicMessage {
-    new_update_date: String,
+    timestamp: u128,
 }
 
 #[derive(Serialize, Debug)]
@@ -83,12 +83,14 @@ async fn function_handler(
     let route_json_string = serde_json::to_string(&route_json).unwrap();
     let route_json_byte_stream = ByteStream::from(route_json_string.into_bytes());
 
+    let s3_bucket = env::var("RAW_DATA_BUCKET").unwrap();
+
     s3_client
         .put_object()
-        .bucket(env::var("RAW_DATA_BUCKET").expect("Missing RAW_DATA_BUCKET"))
+        .bucket(s3_bucket.to_string())
         .key(format!(
-            "bus/{}/citybus/route-list/route-list.json",
-            topic_message.new_update_date
+            "bus/{}/citybus/route/list.json",
+            topic_message.timestamp
         ))
         .body(route_json_byte_stream)
         .send()
@@ -102,11 +104,15 @@ async fn function_handler(
         for direction in vec!["inbound", "outbound"] {
             let http_client_clone = http_client.clone();
             let s3_client_clone = s3_client.clone();
+            let s3_bucket_clone = s3_bucket.clone();
             let route_clone = route.clone();
             let direction_clone = direction.to_string();
             let sns_client_clone = sns_client.clone();
-            let new_update_date = topic_message.new_update_date.clone();
+            let new_update_date = topic_message.timestamp;
             let dynamodb_client_clone = dynamodb_client.clone();
+            let dynamodb_table_name = env::var("DYNAMODB_TABLE_NAME").unwrap();
+            let dynamodb_pk = "action#update";
+            let dynamodb_sk = format!("created_at#{}", new_update_date);
 
             let fut = task::spawn(async move {
                 let route_stop_response = http_client_clone
@@ -120,15 +126,9 @@ async fn function_handler(
                 if route_stop_response.is_err() {
                     let _ = dynamodb_client_clone
                         .update_item()
-                        .table_name(env::var("DYNAMODB_TABLE_NAME").unwrap())
-                        .key(
-                            "pk",
-                            AttributeValue::S("#TD_ROUTES_FARES_GEOJSON#UPDATE".to_string()),
-                        )
-                        .key(
-                            "sk",
-                            AttributeValue::S(format!("#UPDATE_DATE#{}", new_update_date)),
-                        )
+                        .table_name(dynamodb_table_name.to_string())
+                        .key("pk", AttributeValue::S(dynamodb_pk.to_string()))
+                        .key("sk", AttributeValue::S(dynamodb_sk.to_string()))
                         .update_expression("SET #STATUS = :status AND append_list(#ERRORS, :error)")
                         .expression_attribute_names("#STATUS", "stopped")
                         .expression_attribute_values(":status", AttributeValue::Bool(true))
@@ -168,13 +168,13 @@ async fn function_handler(
                             "https://rt.data.gov.hk/v2/transport/citybus/stop/{}",
                             route_stop.stop
                         ),
-                        s3_bucket: env::var("RAW_DATA_BUCKET").expect("Missing RAW_DATA_BUCKET"),
+                        s3_bucket: s3_bucket_clone.to_string(),
                         s3_key: format!(
                             "bus/{}/citybus/stop/{}.json",
                             new_update_date, route_stop.stop
                         ),
-                        dynamodb_pk: "#TD_ROUTES_FARES_GEOJSON#UPDATE".to_string(),
-                        dynamodb_sk: format!("#UPDATE_DATE#{}", new_update_date),
+                        dynamodb_pk: dynamodb_pk.to_string(),
+                        dynamodb_sk: dynamodb_sk.to_string(),
                     };
 
                     let get_citybus_stop_json = serde_json::to_string(&get_citybus_stop_message)
@@ -198,7 +198,7 @@ async fn function_handler(
 
                 s3_client_clone
                     .put_object()
-                    .bucket(env::var("RAW_DATA_BUCKET").expect("Missing RAW_DATA_BUCKET"))
+                    .bucket(s3_bucket_clone.to_string())
                     .key(format!(
                         "bus/{}/citybus/route-stop/{}-{}.json",
                         new_update_date, route_clone.route, direction_clone

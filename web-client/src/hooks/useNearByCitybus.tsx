@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { RouteCitybus, StopCitybus } from "../repositories/types";
+import { RouteCitybus, StopCitybus } from "../database/types";
 import worker from "../workers";
 
 const useNearByCitybus = () => {

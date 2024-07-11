@@ -1,5 +1,4 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { useBoundsStore } from "../stores/bounds";
 import {
   CsdiDataQueryWrapper,
   DataGroupedByStop,
@@ -10,7 +9,8 @@ import {
   RouteGmb,
   StopRouteGmb,
   TerminusLocationCoordinateGmb,
-} from "./types";
+} from "../api/types";
+import { useBoundsStore } from "../stores/bounds";
 
 const useNearByGmb = () => {
   const bounds = useBoundsStore((state) => state.bounds);

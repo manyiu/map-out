@@ -11,7 +11,8 @@ import {
   StopCitybus,
   StopGmb,
   StopKmb,
-} from "../hooks/types";
+} from "../api/types";
+import { MessageEventData } from "./types";
 
 const main = async () => {
   const sqlite3 = await sqlite3InitModule({});
@@ -230,13 +231,6 @@ const main = async () => {
 
   db.exec(createStopGmbIndexSql);
   //#endregion Create GMB Stop table
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  interface MessageEventData<T = any, U = any> {
-    type: string;
-    params?: U;
-    data: T;
-  }
 
   self.addEventListener(
     "message",

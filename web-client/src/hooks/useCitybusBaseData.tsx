@@ -1,12 +1,12 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import pLimit from "p-limit";
-import worker from "../workers";
 import {
   DataWrapper,
   RouteCitybus,
   RouteStopCitybus,
   StopCitybus,
-} from "./types";
+} from "../api/types";
+import worker from "../workers";
 
 const limit = pLimit(10);
 const ONE_WEEK = 1000 * 60 * 60 * 24 * 7;
