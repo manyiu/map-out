@@ -68,14 +68,41 @@ async fn function_handler(
 
     let topic_message: TopicMessage =
         serde_json::from_str(&event.payload.records[0].sns.message).unwrap();
+    let new_update_date = topic_message.timestamp;
+    let dynamodb_table_name = env::var("DYNAMODB_TABLE_NAME").unwrap();
+    let dynamodb_pk = "update#bus";
+    let dynamodb_sk = format!("created_at#{}", new_update_date);
 
     let route_response = http_client
         .get("https://rt.data.gov.hk/v2/transport/citybus/route/ctb")
         .send()
-        .await
-        .unwrap();
+        .await;
+
+    if route_response.is_err() {
+        let _ = dynamodb_client
+            .update_item()
+            .table_name(dynamodb_table_name.to_string())
+            .key("pk", AttributeValue::S(dynamodb_pk.to_string()))
+            .key("sk", AttributeValue::S(dynamodb_sk.to_string()))
+            .update_expression("SET #STATUS = :status AND append_list(#ERRORS, :error)")
+            .expression_attribute_names("#STATUS", "has_error")
+            .expression_attribute_values(":status", AttributeValue::Bool(true))
+            .expression_attribute_names("#ERRORS", "error")
+            .expression_attribute_values(
+                ":error",
+                AttributeValue::S(route_response.err().unwrap().to_string()),
+            )
+            .send()
+            .await;
+
+        panic!(
+            "Failed to fetch route citybus data for timestamp {}",
+            new_update_date
+        );
+    }
 
     let route_json = route_response
+        .unwrap()
         .json::<ResponseWrapper<RouteData>>()
         .await
         .unwrap();
@@ -111,7 +138,7 @@ async fn function_handler(
             let new_update_date = topic_message.timestamp;
             let dynamodb_client_clone = dynamodb_client.clone();
             let dynamodb_table_name = env::var("DYNAMODB_TABLE_NAME").unwrap();
-            let dynamodb_pk = "action#update";
+            let dynamodb_pk = "update#bus";
             let dynamodb_sk = format!("created_at#{}", new_update_date);
 
             let fut = task::spawn(async move {
@@ -130,7 +157,7 @@ async fn function_handler(
                         .key("pk", AttributeValue::S(dynamodb_pk.to_string()))
                         .key("sk", AttributeValue::S(dynamodb_sk.to_string()))
                         .update_expression("SET #STATUS = :status AND append_list(#ERRORS, :error)")
-                        .expression_attribute_names("#STATUS", "stopped")
+                        .expression_attribute_names("#STATUS", "has_error")
                         .expression_attribute_values(":status", AttributeValue::Bool(true))
                         .expression_attribute_names("#ERRORS", "error")
                         .expression_attribute_values(

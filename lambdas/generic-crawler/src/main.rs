@@ -35,7 +35,7 @@ async fn function_handler(
             .key("pk", AttributeValue::S(topic_message.dynamodb_pk))
             .key("sk", AttributeValue::S(topic_message.dynamodb_sk))
             .update_expression("SET #STATUS = :status AND append_list(#ERRORS, :error)")
-            .expression_attribute_names("#STATUS", "stopped")
+            .expression_attribute_names("#STATUS", "has_error")
             .expression_attribute_values(":status", AttributeValue::Bool(true))
             .expression_attribute_names("#ERRORS", "error")
             .expression_attribute_values(

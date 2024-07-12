@@ -81,12 +81,14 @@ export class MapOutStack extends cdk.Stack {
           DYNAMODB_TABLE_NAME: dynamodbTable.tableName,
           UPDATE_DATA_TOPIC_ARN: updateDataTopic.topicArn,
           RAW_DATA_BUCKET: rawDataBucket.bucketName,
+          PROCESSING_DATA_BUCKET: processingDataBucket.bucketName,
         },
         timeout: cdk.Duration.minutes(1),
       }
     );
     dynamodbTable.grantWriteData(initDataUpdateFunction);
     updateDataTopic.grantPublish(initDataUpdateFunction);
+    processingDataBucket.grantReadWrite(initDataUpdateFunction);
 
     const initDataUpdateFunctionInvokeTarget = new LambdaInvoke(
       initDataUpdateFunction,

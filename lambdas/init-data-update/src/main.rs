@@ -27,6 +27,7 @@ struct GenericCrawlerMessage {
 
 async fn function_handler(
     _: LambdaEvent<EventBridgeEvent>,
+    s3_client: &aws_sdk_s3::Client,
     dynamodb_client: &aws_sdk_dynamodb::Client,
     sns_client: &aws_sdk_sns::Client,
 ) -> Result<(), Error> {
@@ -35,11 +36,47 @@ async fn function_handler(
         .unwrap()
         .as_millis();
 
-    let s3_bucket = env::var("RAW_DATA_BUCKET").unwrap();
+    let raw_s3_bucket = env::var("RAW_DATA_BUCKET").unwrap();
+    let processing_s3_bucket = env::var("PROCESSING_DATA_BUCKET").unwrap();
     let dynamodb_table_name = env::var("DYNAMODB_TABLE_NAME").unwrap();
-    let dynamodb_pk = "action#update";
+    let dynamodb_pk = "update#bus";
     let dynamodb_sk = format!("created_at#{}", timestamp);
     let sns_topice_arn = env::var("UPDATE_DATA_TOPIC_ARN").unwrap();
+
+    let mut processing_list_objects_response = s3_client
+        .list_objects_v2()
+        .bucket(processing_s3_bucket.to_string())
+        .into_paginator()
+        .send();
+
+    while let Some(result) = processing_list_objects_response.next().await {
+        let outputs = result.unwrap();
+        let mut delete_objects = Vec::new();
+
+        for content in outputs.contents() {
+            let key = aws_sdk_s3::types::ObjectIdentifier::builder()
+                .set_key(Some(content.key().unwrap().to_string()))
+                .build()
+                .unwrap();
+
+            delete_objects.push(key);
+        }
+
+        if !delete_objects.is_empty() {
+            let _ = s3_client
+                .delete_objects()
+                .bucket(processing_s3_bucket.to_string())
+                .delete(
+                    aws_sdk_s3::types::Delete::builder()
+                        .set_objects(Some(delete_objects))
+                        .build()
+                        .unwrap(),
+                )
+                .send()
+                .await
+                .unwrap();
+        }
+    }
 
     let _ = dynamodb_client
         .put_item()
@@ -130,7 +167,7 @@ async fn function_handler(
 
     let get_kmb_route_stop_message = GenericCrawlerMessage {
         url: "https://data.etabus.gov.hk/v1/transport/kmb/route-stop".to_string(),
-        s3_bucket,
+        s3_bucket: raw_s3_bucket,
         s3_key: format!("bus/{}/kmb/route-stop/list.json", timestamp),
         dynamodb_pk: dynamodb_pk.to_string(),
         dynamodb_sk: dynamodb_sk.to_string(),
@@ -156,6 +193,9 @@ async fn main() -> Result<(), Error> {
 
     let config = load_defaults(BehaviorVersion::latest()).await;
 
+    let s3_client = aws_sdk_s3::Client::new(&config);
+    let shared_s3_client = &s3_client;
+
     let dynamodb_client = aws_sdk_dynamodb::Client::new(&config);
     let shared_dynamodb_client = &dynamodb_client;
 
@@ -163,7 +203,13 @@ async fn main() -> Result<(), Error> {
     let shared_sns_client = &sns_client;
 
     run(service_fn(move |event| async move {
-        function_handler(event, &shared_dynamodb_client, &shared_sns_client).await
+        function_handler(
+            event,
+            &shared_s3_client,
+            &shared_dynamodb_client,
+            &shared_sns_client,
+        )
+        .await
     }))
     .await
 }
