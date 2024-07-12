@@ -1,3 +1,4 @@
+import * as glue from "@aws-cdk/aws-glue-alpha";
 import { Schedule, ScheduleExpression } from "@aws-cdk/aws-scheduler-alpha";
 import { LambdaInvoke } from "@aws-cdk/aws-scheduler-targets-alpha";
 import * as cdk from "aws-cdk-lib";
@@ -201,8 +202,6 @@ export class MapOutStack extends cdk.Stack {
       { prefix: "bus/" }
     );
 
-    const glueDatabaseName = "map_out";
-
     const glueIamPolicy = new cdk.aws_iam.Policy(this, "MapOutGlueIamPolicy", {
       statements: [
         new cdk.aws_iam.PolicyStatement({
@@ -227,369 +226,202 @@ export class MapOutStack extends cdk.Stack {
 
     glueIamPolicy.attachToRole(glueIamRole);
 
-    const glueDatebase = new cdk.aws_glue.CfnDatabase(
-      this,
-      "MapOutGlueDatabase",
-      { catalogId: this.account, databaseInput: { name: glueDatabaseName } }
-    );
+    const glueDatabase = new glue.Database(this, "MapOutGlueDatabase", {
+      databaseName: "map-out",
+    });
 
-    const citybusRouteTable = new cdk.aws_glue.CfnTable(
+    const citybusRouteTable = new glue.S3Table(
       this,
       "MapOutCitybusRouteTable",
       {
-        databaseName: glueDatabaseName,
-        catalogId: this.account,
-        tableInput: {
-          name: "map_out-citybus_route",
-          parameters: {
-            jsonPath: "$.data[*]",
-            compressionType: "none",
-            classification: "json",
-            typeOfData: "file",
-          },
-          storageDescriptor: {
-            columns: [
-              {
-                name: "co",
-                type: "string",
-              },
-              {
-                name: "route",
-                type: "string",
-              },
-              {
-                name: "orig_tc",
-                type: "string",
-              },
-              {
-                name: "orig_en",
-                type: "string",
-              },
-              {
-                name: "dest_tc",
-                type: "string",
-              },
-              {
-                name: "dest_en",
-                type: "string",
-              },
-              {
-                name: "orig_sc",
-                type: "string",
-              },
-              {
-                name: "dest_sc",
-                type: "string",
-              },
-              {
-                name: "data_timestamp",
-                type: "string",
-              },
-            ],
-            location: `s3://${processingDataBucket.bucketName}/bus/citybus/route/`,
-            inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
-            outputFormat:
-              "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
-            serdeInfo: {
-              serializationLibrary: "org.openx.data.jsonserde.JsonSerDe",
-              parameters: {
-                paths:
-                  "co,route,orig_tc,orig_en,dest_tc,dest_en,orig_sc,dest_sc,data_timestamp",
-              },
-            },
-          },
-        },
-      }
-    );
-
-    const citybusStopTable = new cdk.aws_glue.CfnTable(
-      this,
-      "MapOutCitybusStopTable",
-      {
-        databaseName: glueDatabaseName,
-        catalogId: this.account,
-        tableInput: {
-          name: "map_out-citybus_stop",
-          parameters: {
-            jsonPath: "$.data",
-            compressionType: "none",
-            classification: "json",
-            typeOfData: "file",
-          },
-          storageDescriptor: {
-            columns: [
-              {
-                name: "data_timestamp",
-                type: "string",
-              },
-              {
-                name: "lat",
-                type: "string",
-              },
-              {
-                name: "long",
-                type: "string",
-              },
-              {
-                name: "name_en",
-                type: "string",
-              },
-              {
-                name: "name_sc",
-                type: "string",
-              },
-              {
-                name: "name_tc",
-                type: "string",
-              },
-              {
-                name: "stop",
-                type: "string",
-              },
-            ],
-            location: `s3://${processingDataBucket.bucketName}/bus/citybus/stop/`,
-            inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
-            outputFormat:
-              "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
-            serdeInfo: {
-              serializationLibrary: "org.openx.data.jsonserde.JsonSerDe",
-              parameters: {
-                paths: "data_timestamp,lat,long,name_en,name_sc,name_tc,stop",
-              },
-            },
-          },
-        },
-      }
-    );
-
-    const citybusRouteStopTable = new cdk.aws_glue.CfnTable(
-      this,
-      "MapOutCitybusRouteStopTable",
-      {
-        databaseName: glueDatabaseName,
-        catalogId: this.account,
-        tableInput: {
-          name: "map_out-citybus_route_stop",
-          parameters: {
-            jsonPath: "$.data[*]",
-            compressionType: "none",
-            classification: "json",
-            typeOfData: "file",
-          },
-          storageDescriptor: {
-            columns: [
-              {
-                name: "co",
-                type: "string",
-              },
-              {
-                name: "route",
-                type: "string",
-              },
-              {
-                name: "dir",
-                type: "string",
-              },
-              {
-                name: "seq",
-                type: "int",
-              },
-              {
-                name: "stop",
-                type: "string",
-              },
-              {
-                name: "data_timestamp",
-                type: "string",
-              },
-            ],
-            location: `s3://${processingDataBucket.bucketName}/bus/citybus/route-stop/`,
-            inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
-            outputFormat:
-              "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
-            serdeInfo: {
-              serializationLibrary: "org.openx.data.jsonserde.JsonSerDe",
-              parameters: {
-                paths: "co,route,dir,seq,stop,data_timestamp",
-              },
-            },
-          },
-        },
-      }
-    );
-
-    const kmbRouteTable = new cdk.aws_glue.CfnTable(
-      this,
-      "MapOutKmbRouteTable",
-      {
-        databaseName: glueDatabaseName,
-        catalogId: this.account,
-        tableInput: {
-          name: "map_out-kmb_route",
-          parameters: {
-            jsonPath: "$.data[*]",
-            compressionType: "none",
-            classification: "json",
-            typeOfData: "file",
-          },
-          storageDescriptor: {
-            columns: [
-              {
-                name: "route",
-                type: "string",
-              },
-              {
-                name: "bound",
-                type: "string",
-              },
-              {
-                name: "service_type",
-                type: "string",
-              },
-              {
-                name: "orig_en",
-                type: "string",
-              },
-              {
-                name: "orig_tc",
-                type: "string",
-              },
-              {
-                name: "orig_sc",
-                type: "string",
-              },
-              {
-                name: "dest_en",
-                type: "string",
-              },
-              {
-                name: "dest_tc",
-                type: "string",
-              },
-              {
-                name: "dest_sc",
-                type: "string",
-              },
-            ],
-            location: `s3://${processingDataBucket.bucketName}/bus/kmb/route/`,
-            inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
-            outputFormat:
-              "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
-            serdeInfo: {
-              serializationLibrary: "org.openx.data.jsonserde.JsonSerDe",
-              parameters: {
-                paths:
-                  "route,bound,service_type,orig_en,orig_tc,orig_sc,dest_en,dest_tc,dest_sc",
-              },
-            },
-          },
-        },
-      }
-    );
-
-    const kmbStopTable = new cdk.aws_glue.CfnTable(this, "MapOutKmbStopTable", {
-      databaseName: glueDatabaseName,
-      catalogId: this.account,
-      tableInput: {
-        name: "map_out-kmb_stop",
+        bucket: processingDataBucket,
+        s3Prefix: "bus/citybus/route/",
+        database: glueDatabase,
+        dataFormat: glue.DataFormat.JSON,
+        columns: [
+          { name: "co", type: glue.Schema.STRING },
+          { name: "route", type: glue.Schema.STRING },
+          { name: "orig_tc", type: glue.Schema.STRING },
+          { name: "orig_en", type: glue.Schema.STRING },
+          { name: "dest_tc", type: glue.Schema.STRING },
+          { name: "dest_en", type: glue.Schema.STRING },
+          { name: "orig_sc", type: glue.Schema.STRING },
+          { name: "dest_sc", type: glue.Schema.STRING },
+          { name: "data_timestamp", type: glue.Schema.STRING },
+        ],
         parameters: {
           jsonPath: "$.data[*]",
           compressionType: "none",
-          classification: "json",
           typeOfData: "file",
         },
-        storageDescriptor: {
-          columns: [
-            {
-              name: "stop",
-              type: "string",
-            },
-            {
-              name: "name_en",
-              type: "string",
-            },
-            {
-              name: "name_tc",
-              type: "string",
-            },
-            {
-              name: "name_sc",
-              type: "string",
-            },
-            {
-              name: "lat",
-              type: "string",
-            },
-            {
-              name: "long",
-              type: "string",
-            },
-          ],
-          location: `s3://${processingDataBucket.bucketName}/bus/kmb/stop/`,
-          inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
-          outputFormat:
-            "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
-          serdeInfo: {
-            serializationLibrary: "org.openx.data.jsonserde.JsonSerDe",
-            parameters: {
-              paths: "stop,name_en,name_tc,name_sc,lat,long",
-            },
-          },
-        },
+        storageParameters: [
+          glue.StorageParameter.compressionType(glue.CompressionType.NONE),
+          glue.StorageParameter.custom("classification", "json"),
+        ],
+      }
+    );
+
+    const citybusStopTable = new glue.S3Table(this, "MapOutCitybusStopTable", {
+      bucket: processingDataBucket,
+      s3Prefix: "bus/citybus/stop/",
+      database: glueDatabase,
+      dataFormat: glue.DataFormat.JSON,
+      columns: [
+        { name: "data_timestamp", type: glue.Schema.STRING },
+        { name: "lat", type: glue.Schema.STRING },
+        { name: "long", type: glue.Schema.STRING },
+        { name: "name_en", type: glue.Schema.STRING },
+        { name: "name_sc", type: glue.Schema.STRING },
+        { name: "name_tc", type: glue.Schema.STRING },
+        { name: "stop", type: glue.Schema.STRING },
+      ],
+      parameters: {
+        jsonPath: "$.data",
+        compressionType: "none",
+        typeOfData: "file",
       },
+      storageParameters: [
+        glue.StorageParameter.compressionType(glue.CompressionType.NONE),
+        glue.StorageParameter.custom("classification", "json"),
+      ],
     });
 
-    const kmbRouteStopTable = new cdk.aws_glue.CfnTable(
+    const citybusRouteStopTable = new glue.S3Table(
+      this,
+      "MapOutCitybusRouteStopTable",
+      {
+        bucket: processingDataBucket,
+        s3Prefix: "bus/citybus/route-stop/",
+        database: glueDatabase,
+        dataFormat: glue.DataFormat.JSON,
+        columns: [
+          { name: "co", type: glue.Schema.STRING },
+          { name: "route", type: glue.Schema.STRING },
+          { name: "dir", type: glue.Schema.STRING },
+          { name: "seq", type: glue.Schema.INTEGER },
+          { name: "stop", type: glue.Schema.STRING },
+          { name: "data_timestamp", type: glue.Schema.STRING },
+        ],
+        parameters: {
+          jsonPath: "$.data[*]",
+          compressionType: "none",
+          typeOfData: "file",
+        },
+        storageParameters: [
+          glue.StorageParameter.compressionType(glue.CompressionType.NONE),
+          glue.StorageParameter.custom("classification", "json"),
+        ],
+      }
+    );
+
+    const kmbRouteTable = new glue.S3Table(this, "MapOutKmbRouteTable", {
+      bucket: processingDataBucket,
+      s3Prefix: "bus/kmb/route/",
+      database: glueDatabase,
+      dataFormat: glue.DataFormat.JSON,
+      columns: [
+        { name: "route", type: glue.Schema.STRING },
+        { name: "bound", type: glue.Schema.STRING },
+        { name: "service_type", type: glue.Schema.STRING },
+        { name: "orig_en", type: glue.Schema.STRING },
+        { name: "orig_tc", type: glue.Schema.STRING },
+        { name: "orig_sc", type: glue.Schema.STRING },
+        { name: "dest_en", type: glue.Schema.STRING },
+        { name: "dest_tc", type: glue.Schema.STRING },
+        { name: "dest_sc", type: glue.Schema.STRING },
+      ],
+      parameters: {
+        jsonPath: "$.data[*]",
+        compressionType: "none",
+        typeOfData: "file",
+      },
+      storageParameters: [
+        glue.StorageParameter.compressionType(glue.CompressionType.NONE),
+        glue.StorageParameter.custom("classification", "json"),
+      ],
+    });
+
+    const kmbStopTable = new glue.S3Table(this, "MapOutKmbStopTable", {
+      bucket: processingDataBucket,
+      s3Prefix: "bus/kmb/stop/",
+      database: glueDatabase,
+      dataFormat: glue.DataFormat.JSON,
+      columns: [
+        { name: "stop", type: glue.Schema.STRING },
+        { name: "name_en", type: glue.Schema.STRING },
+        { name: "name_tc", type: glue.Schema.STRING },
+        { name: "name_sc", type: glue.Schema.STRING },
+        { name: "lat", type: glue.Schema.STRING },
+        { name: "long", type: glue.Schema.STRING },
+      ],
+      parameters: {
+        jsonPath: "$.data[*]",
+        compressionType: "none",
+        typeOfData: "file",
+      },
+      storageParameters: [
+        glue.StorageParameter.compressionType(glue.CompressionType.NONE),
+        glue.StorageParameter.custom("classification", "json"),
+      ],
+    });
+
+    const kmbRouteStopTable = new glue.S3Table(
       this,
       "MapOutKmbRouteStopTable",
       {
-        databaseName: glueDatabaseName,
-        catalogId: this.account,
-        tableInput: {
-          name: "map_out-kmb_route_stop",
-          parameters: {
-            jsonPath: "$.data[*]",
-            compressionType: "none",
-            classification: "json",
-            typeOfData: "file",
-          },
-          storageDescriptor: {
-            columns: [
-              {
-                name: "route",
-                type: "string",
-              },
-              {
-                name: "bound",
-                type: "string",
-              },
-              {
-                name: "service_type",
-                type: "string",
-              },
-              {
-                name: "seq",
-                type: "string",
-              },
-              {
-                name: "stop",
-                type: "string",
-              },
-            ],
-            location: `s3://${processingDataBucket.bucketName}/bus/kmb/route-stop/`,
-            inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
-            outputFormat:
-              "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
-            serdeInfo: {
-              serializationLibrary: "org.openx.data.jsonserde.JsonSerDe",
-              parameters: {
-                paths: "route,bound,service_type,seq,stop",
-              },
-            },
-          },
+        bucket: processingDataBucket,
+        s3Prefix: "bus/kmb/route-stop/",
+        database: glueDatabase,
+        dataFormat: glue.DataFormat.JSON,
+        columns: [
+          { name: "route", type: glue.Schema.STRING },
+          { name: "bound", type: glue.Schema.STRING },
+          { name: "service_type", type: glue.Schema.STRING },
+          { name: "seq", type: glue.Schema.STRING },
+          { name: "stop", type: glue.Schema.STRING },
+        ],
+        parameters: {
+          jsonPath: "$.data[*]",
+          compressionType: "none",
+          typeOfData: "file",
         },
+        storageParameters: [
+          glue.StorageParameter.compressionType(glue.CompressionType.NONE),
+          glue.StorageParameter.custom("classification", "json"),
+        ],
       }
     );
+
+    const busEtlJob = new glue.Job(this, "MapOutBusEtlJob", {
+      executable: glue.JobExecutable.pythonEtl({
+        glueVersion: glue.GlueVersion.V4_0,
+        pythonVersion: glue.PythonVersion.THREE,
+        script: glue.Code.fromAsset(
+          path.join(__dirname, "..", "glue", "map-out-bus-job.py")
+        ),
+      }),
+      defaultArguments: {
+        "--map_out_database": glueDatabase.databaseName,
+        "--citybus_route_table": citybusRouteTable.tableName,
+        "--citybus_stop_table": citybusStopTable.tableName,
+        "--citybus_route_stop_table": citybusRouteStopTable.tableName,
+        "--kmb_route_table": kmbRouteTable.tableName,
+        "--kmb_stop_table": kmbStopTable.tableName,
+        "--kmb_route_stop_table": kmbRouteStopTable.tableName,
+        "--citybus_route_s3_output_path": `s3://${processedDataBucket.bucketName}/bus/citybus/route/`,
+        "--citybus_stop_s3_output_path": `s3://${processedDataBucket.bucketName}/bus/citybus/stop/`,
+        "--citybus_route_stop_s3_output_path": `s3://${processedDataBucket.bucketName}/bus/citybus/route-stop/`,
+        "--kmb_route_s3_output_path": `s3://${processedDataBucket.bucketName}/bus/kmb/route/`,
+        "--kmb_stop_s3_output_path": `s3://${processedDataBucket.bucketName}/bus/kmb/stop/`,
+        "--kmb_route_stop_s3_output_path": `s3://${processedDataBucket.bucketName}/bus/kmb/route-stop/`,
+      },
+      workerType: glue.WorkerType.G_1X,
+      workerCount: 2,
+      timeout: cdk.Duration.minutes(10),
+      executionClass: glue.ExecutionClass.FLEX,
+    });
+    processingDataBucket.grantRead(busEtlJob);
+    processedDataBucket.grantWrite(busEtlJob);
 
     const hostingBucket = new cdk.aws_s3.Bucket(this, "MapOutHostingBucket", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
