@@ -17,6 +17,7 @@ async fn function_handler(
         .key_condition_expression("#pk = :pk")
         .expression_attribute_names("#pk", "pk")
         .expression_attribute_values(":pk", AttributeValue::S("update#bus".to_string()))
+        .scan_index_forward(false)
         .limit(1)
         .send()
         .await?;

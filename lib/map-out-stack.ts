@@ -112,7 +112,7 @@ export class MapOutStack extends cdk.Stack {
       {
         schedule: ScheduleExpression.cron({
           timeZone: cdk.TimeZone.ASIA_HONG_KONG,
-          minute: "0",
+          minute: "30",
           hour: "0",
           day: "*",
           month: "*",
@@ -260,12 +260,66 @@ export class MapOutStack extends cdk.Stack {
         schedule: ScheduleExpression.cron({
           timeZone: cdk.TimeZone.ASIA_HONG_KONG,
           minute: "0",
-          hour: "12",
+          hour: "23",
           day: "*",
           month: "*",
           year: "*",
         }),
         target: emptyProcessingBucketFunctionInvokeTarget,
+      }
+    );
+
+    const releaseDataPackFunction = new RustFunction(
+      this,
+      "MapOutReleaseDataPackFunction",
+      {
+        manifestPath: path.join(
+          __dirname,
+          "..",
+          "lambdas",
+          "release-data-pack",
+          "Cargo.toml"
+        ),
+        architecture: cdk.aws_lambda.Architecture.ARM_64,
+        environment: {
+          DYNAMODB_TABLE_NAME: dynamodbTable.tableName,
+          PROCESSED_DATA_BUCKET: processedDataBucket.bucketName,
+        },
+        timeout: cdk.Duration.minutes(1),
+      }
+    );
+    dynamodbTable.grantReadWriteData(releaseDataPackFunction);
+    processedDataBucket.grantRead(releaseDataPackFunction);
+
+    const releaseDataPackFunctionInvokeTargetRole = new cdk.aws_iam.Role(
+      this,
+      "MapOutReleaseDataPackFunctionInvokeTargetRole",
+      {
+        assumedBy: new cdk.aws_iam.ServicePrincipal("scheduler.amazonaws.com"),
+      }
+    );
+
+    const releaseDataPackFunctionInvokeTarget = new LambdaInvoke(
+      releaseDataPackFunction,
+      {
+        retryAttempts: 5,
+        role: releaseDataPackFunctionInvokeTargetRole,
+      }
+    );
+
+    const releaseDataPackSchedule = new Schedule(
+      this,
+      "MapOutReleaseDataPackSchedule",
+      {
+        schedule: ScheduleExpression.cron({
+          timeZone: cdk.TimeZone.ASIA_HONG_KONG,
+          minute: "30",
+          hour: "1",
+          day: "*",
+          month: "*",
+          year: "*",
+        }),
+        target: releaseDataPackFunctionInvokeTarget,
       }
     );
 
@@ -518,8 +572,8 @@ export class MapOutStack extends cdk.Stack {
       {
         schedule: ScheduleExpression.cron({
           timeZone: cdk.TimeZone.ASIA_HONG_KONG,
-          minute: "15",
-          hour: "0",
+          minute: "0",
+          hour: "1",
           day: "*",
           month: "*",
           year: "*",

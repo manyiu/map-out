@@ -8,13 +8,13 @@ async fn function_handler(
     _event: LambdaEvent<EventBridgeEvent>,
     s3_client: &aws_sdk_s3::Client,
 ) -> Result<(), Error> {
-    let mut processed_list_objects_response = s3_client
+    let mut processing_list_objects_response = s3_client
         .list_objects_v2()
         .bucket(env::var("PROCESSING_DATA_BUCKET")?)
         .into_paginator()
         .send();
 
-    while let Some(result) = processed_list_objects_response.next().await {
+    while let Some(result) = processing_list_objects_response.next().await {
         let outputs = result.unwrap();
         let mut delete_objects = Vec::new();
 
@@ -30,7 +30,7 @@ async fn function_handler(
         if !delete_objects.is_empty() {
             let _ = s3_client
                 .delete_objects()
-                .bucket(env::var("PROCESSED_DATA_BUCKET")?)
+                .bucket(env::var("PROCESSING_DATA_BUCKET")?)
                 .delete(
                     aws_sdk_s3::types::Delete::builder()
                         .set_objects(Some(delete_objects))
