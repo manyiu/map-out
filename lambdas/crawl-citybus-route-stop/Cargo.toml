@@ -1,5 +1,5 @@
 [package]
-name = "crawlCitybusRouteStop"
+name = "crawl-citybus-route-stop"
 version = "0.1.0"
 edition = "2021"
 

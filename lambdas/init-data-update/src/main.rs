@@ -84,7 +84,7 @@ async fn function_handler(
         .item("pk", AttributeValue::S(dynamodb_pk.to_string()))
         .item("sk", AttributeValue::S(dynamodb_sk.to_string()))
         .item("created_at", AttributeValue::N(timestamp.to_string()))
-        .item("stopped", AttributeValue::Bool(false))
+        .item("has_error", AttributeValue::Bool(false))
         .item("error", AttributeValue::L(Vec::new()))
         .send()
         .await

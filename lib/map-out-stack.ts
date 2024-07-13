@@ -90,24 +90,37 @@ export class MapOutStack extends cdk.Stack {
     updateDataTopic.grantPublish(initDataUpdateFunction);
     processingDataBucket.grantReadWrite(initDataUpdateFunction);
 
+    const initDataUpdateFunctionInvokeTargetRole = new cdk.aws_iam.Role(
+      this,
+      "MapOutInitDataUpdateFunctionInvokeTargetRole",
+      {
+        assumedBy: new cdk.aws_iam.ServicePrincipal("scheduler.amazonaws.com"),
+      }
+    );
+
     const initDataUpdateFunctionInvokeTarget = new LambdaInvoke(
       initDataUpdateFunction,
       {
         retryAttempts: 5,
+        role: initDataUpdateFunctionInvokeTargetRole,
       }
     );
 
-    new Schedule(this, "MapOutInitDataUpdateSchedule", {
-      schedule: ScheduleExpression.cron({
-        timeZone: cdk.TimeZone.ASIA_HONG_KONG,
-        minute: "0",
-        hour: "0",
-        day: "*",
-        month: "*",
-        year: "*",
-      }),
-      target: initDataUpdateFunctionInvokeTarget,
-    });
+    const initDataUpdateSchedule = new Schedule(
+      this,
+      "MapOutInitDataUpdateSchedule",
+      {
+        schedule: ScheduleExpression.cron({
+          timeZone: cdk.TimeZone.ASIA_HONG_KONG,
+          minute: "0",
+          hour: "0",
+          day: "*",
+          month: "*",
+          year: "*",
+        }),
+        target: initDataUpdateFunctionInvokeTarget,
+      }
+    );
 
     const crawlCitybusRouteStopFunction = new RustFunction(
       this,
@@ -204,29 +217,57 @@ export class MapOutStack extends cdk.Stack {
       { prefix: "bus/" }
     );
 
-    const glueIamPolicy = new cdk.aws_iam.Policy(this, "MapOutGlueIamPolicy", {
-      statements: [
-        new cdk.aws_iam.PolicyStatement({
-          actions: ["s3:GetObject", "s3:PutObject"],
-          resources: [
-            `${rawDataBucket.bucketArn}/*`,
-            `${processingDataBucket.bucketArn}/*`,
-            `${processedDataBucket.bucketArn}/*`,
-          ],
-        }),
-      ],
-    });
-
-    const glueIamRole = new cdk.aws_iam.Role(this, "MapOutGlueIamRole", {
-      assumedBy: new cdk.aws_iam.ServicePrincipal("glue.amazonaws.com"),
-      managedPolicies: [
-        cdk.aws_iam.ManagedPolicy.fromAwsManagedPolicyName(
-          "service-role/AWSGlueServiceRole"
+    const emptyProcessingBucketFunction = new RustFunction(
+      this,
+      "MapOutEmptyProcessingBucketFunction",
+      {
+        manifestPath: path.join(
+          __dirname,
+          "..",
+          "lambdas",
+          "empty-processing-bucket",
+          "Cargo.toml"
         ),
-      ],
-    });
+        architecture: cdk.aws_lambda.Architecture.ARM_64,
+        environment: {
+          PROCESSING_DATA_BUCKET: processingDataBucket.bucketName,
+        },
+        timeout: cdk.Duration.minutes(1),
+      }
+    );
+    processingDataBucket.grantReadWrite(emptyProcessingBucketFunction);
 
-    glueIamPolicy.attachToRole(glueIamRole);
+    const emptyProcessingBucketFunctionInvokeTargetRole = new cdk.aws_iam.Role(
+      this,
+      "MapOutEmptyProcessingBucketFunctionInvokeTargetRole",
+      {
+        assumedBy: new cdk.aws_iam.ServicePrincipal("scheduler.amazonaws.com"),
+      }
+    );
+
+    const emptyProcessingBucketFunctionInvokeTarget = new LambdaInvoke(
+      emptyProcessingBucketFunction,
+      {
+        retryAttempts: 5,
+        role: emptyProcessingBucketFunctionInvokeTargetRole,
+      }
+    );
+
+    const emptyProcessingBucketSchedule = new Schedule(
+      this,
+      "MapOutEmptyProcessingBucketSchedule",
+      {
+        schedule: ScheduleExpression.cron({
+          timeZone: cdk.TimeZone.ASIA_HONG_KONG,
+          minute: "0",
+          hour: "12",
+          day: "*",
+          month: "*",
+          year: "*",
+        }),
+        target: emptyProcessingBucketFunctionInvokeTarget,
+      }
+    );
 
     const glueDatabase = new glue.Database(this, "MapOutGlueDatabase", {
       databaseName: "map-out",
@@ -410,12 +451,14 @@ export class MapOutStack extends cdk.Stack {
         "--kmb_route_table": kmbRouteTable.tableName,
         "--kmb_stop_table": kmbStopTable.tableName,
         "--kmb_route_stop_table": kmbRouteStopTable.tableName,
-        "--citybus_route_s3_output_path": `s3://${processedDataBucket.bucketName}/bus/citybus/route/`,
-        "--citybus_stop_s3_output_path": `s3://${processedDataBucket.bucketName}/bus/citybus/stop/`,
-        "--citybus_route_stop_s3_output_path": `s3://${processedDataBucket.bucketName}/bus/citybus/route-stop/`,
-        "--kmb_route_s3_output_path": `s3://${processedDataBucket.bucketName}/bus/kmb/route/`,
-        "--kmb_stop_s3_output_path": `s3://${processedDataBucket.bucketName}/bus/kmb/stop/`,
-        "--kmb_route_stop_s3_output_path": `s3://${processedDataBucket.bucketName}/bus/kmb/route-stop/`,
+        "--s3_output_bucket": processedDataBucket.bucketName,
+        "--citybus_route_s3_output_path": `/citybus/route/`,
+        "--citybus_stop_s3_output_path": `/citybus/stop/`,
+        "--citybus_route_stop_s3_output_path": `/citybus/route-stop/`,
+        "--kmb_route_s3_output_path": `/kmb/route/`,
+        "--kmb_stop_s3_output_path": `/kmb/stop/`,
+        "--kmb_route_stop_s3_output_path": `/kmb/route-stop/`,
+        "--updated_at": "0",
       },
       workerType: glue.WorkerType.G_1X,
       workerCount: 2,
@@ -424,6 +467,66 @@ export class MapOutStack extends cdk.Stack {
     });
     processingDataBucket.grantRead(busEtlJob);
     processedDataBucket.grantWrite(busEtlJob);
+
+    const startEtlJobPolicy = new cdk.aws_iam.PolicyStatement({
+      actions: ["glue:StartJobRun"],
+      resources: [busEtlJob.jobArn],
+    });
+
+    const startEtlJobFunction = new RustFunction(
+      this,
+      "MapOutStartEtlJobFunction",
+      {
+        manifestPath: path.join(
+          __dirname,
+          "..",
+          "lambdas",
+          "start-etl-job",
+          "Cargo.toml"
+        ),
+        architecture: cdk.aws_lambda.Architecture.ARM_64,
+        environment: {
+          DYNAMODB_TABLE_NAME: dynamodbTable.tableName,
+          GLUE_JOB_NAME: busEtlJob.jobName,
+        },
+        timeout: cdk.Duration.minutes(1),
+      }
+    );
+    startEtlJobFunction.addToRolePolicy(startEtlJobPolicy);
+    processingDataBucket.grantReadWrite(startEtlJobFunction);
+    dynamodbTable.grantReadData(startEtlJobFunction);
+
+    const startEtlJobFunctionInvokeTargetRole = new cdk.aws_iam.Role(
+      this,
+      "MapOutStartEtlJobFunctionInvokeTargetRole",
+      {
+        assumedBy: new cdk.aws_iam.ServicePrincipal("scheduler.amazonaws.com"),
+      }
+    );
+
+    const startEtlJobFunctionInvokeTarget = new LambdaInvoke(
+      startEtlJobFunction,
+      {
+        retryAttempts: 5,
+        role: startEtlJobFunctionInvokeTargetRole,
+      }
+    );
+
+    const startEtlJobSchedule = new Schedule(
+      this,
+      "MapOutStartEtlJobSchedule",
+      {
+        schedule: ScheduleExpression.cron({
+          timeZone: cdk.TimeZone.ASIA_HONG_KONG,
+          minute: "15",
+          hour: "0",
+          day: "*",
+          month: "*",
+          year: "*",
+        }),
+        target: startEtlJobFunctionInvokeTarget,
+      }
+    );
 
     const hostingBucket = new cdk.aws_s3.Bucket(this, "MapOutHostingBucket", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
