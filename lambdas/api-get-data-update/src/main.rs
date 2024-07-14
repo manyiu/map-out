@@ -20,7 +20,7 @@ async fn function_handler(
         .table_name(env::var("DYNAMODB_TABLE_NAME")?)
         .key_condition_expression("#pk = :pk")
         .expression_attribute_names("#pk", "pk")
-        .expression_attribute_values(":pk", AttributeValue::S("update#bus".to_string()))
+        .expression_attribute_values(":pk", AttributeValue::S("data#bus".to_string()))
         .scan_index_forward(false)
         .limit(1)
         .send()
@@ -28,7 +28,7 @@ async fn function_handler(
 
     let item = latest_update_response.items().first().unwrap();
 
-    let create_at = item
+    let created_at = item
         .get("created_at")
         .unwrap()
         .as_n()
@@ -39,7 +39,7 @@ async fn function_handler(
     let file_list = item.get("data").unwrap().as_ss().unwrap();
 
     let response_body = HttpResponseBody {
-        timestamp: create_at,
+        timestamp: created_at,
         files: file_list.clone(),
     };
 

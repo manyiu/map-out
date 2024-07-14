@@ -8,7 +8,9 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "deploy:backend": "cdk deploy --require-approval never --outputs-file ./web-client/src/amplify/config.json MapOutBackendStack",
+    "deploy:frontend": "cdk deploy --require-approval never MapOutWebClientStack"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
