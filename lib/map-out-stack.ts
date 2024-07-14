@@ -4,6 +4,7 @@ import { LambdaInvoke } from "@aws-cdk/aws-scheduler-targets-alpha";
 import * as cdk from "aws-cdk-lib";
 import { RustFunction } from "cargo-lambda-cdk";
 import { Construct } from "constructs";
+import "dotenv/config";
 import path = require("path");
 
 const subdomainPrefix =
@@ -14,6 +15,8 @@ const subdomainPrefix =
 export class MapOutStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    //# region Data Preparation
 
     const rawDataBucket = new cdk.aws_s3.Bucket(this, "MapOutRawDataBucket", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -323,6 +326,145 @@ export class MapOutStack extends cdk.Stack {
       }
     );
 
+    const apiGetDataUpdateFunction = new RustFunction(
+      this,
+      "MapOutApiGetDataUpdateFunction",
+      {
+        manifestPath: path.join(
+          __dirname,
+          "..",
+          "lambdas",
+          "api-get-data-update",
+          "Cargo.toml"
+        ),
+        architecture: cdk.aws_lambda.Architecture.ARM_64,
+        environment: {
+          DYNAMODB_TABLE_NAME: dynamodbTable.tableName,
+        },
+        timeout: cdk.Duration.minutes(1),
+      }
+    );
+    dynamodbTable.grantReadData(apiGetDataUpdateFunction);
+
+    const httpApi = new cdk.aws_apigatewayv2.HttpApi(this, "MapOutHttpApi", {
+      corsPreflight: {
+        allowHeaders: ["*"],
+        allowMethods: [cdk.aws_apigatewayv2.CorsHttpMethod.GET],
+        allowOrigins: ["*"],
+      },
+    });
+
+    const apiGetDataUpdateIntegration =
+      new cdk.aws_apigatewayv2_integrations.HttpLambdaIntegration(
+        "MapOutApiGetDataUpdateIntegration",
+        apiGetDataUpdateFunction
+      );
+
+    httpApi.addRoutes({
+      path: "/data/update",
+      methods: [cdk.aws_apigatewayv2.HttpMethod.GET],
+      integration: apiGetDataUpdateIntegration,
+    });
+
+    const existingHostedZone = cdk.aws_route53.HostedZone.fromLookup(
+      this,
+      "MapOutHostedZone",
+      {
+        domainName: process.env.HOST_ZONE || "vazue.com",
+      }
+    );
+
+    const apiCertificate = new cdk.aws_certificatemanager.Certificate(
+      this,
+      "MapOutApiCertificate",
+      {
+        domainName: `${subdomainPrefix}api.map-out.${existingHostedZone.zoneName}`,
+        validation:
+          cdk.aws_certificatemanager.CertificateValidation.fromDns(
+            existingHostedZone
+          ),
+      }
+    );
+
+    const apiDistributionResponseHeadersPolicy =
+      new cdk.aws_cloudfront.ResponseHeadersPolicy(
+        this,
+        "MapOutApiDistributionResponseHeadersPolicy",
+        {
+          corsBehavior: {
+            accessControlAllowCredentials: false,
+            accessControlAllowHeaders: ["*"],
+            accessControlAllowMethods: ["GET"],
+            accessControlAllowOrigins: [
+              `https://${subdomainPrefix}map-out.vazue.com`,
+            ],
+            originOverride: true,
+          },
+        }
+      );
+
+    const apiDistributionCachePolicy = new cdk.aws_cloudfront.CachePolicy(
+      this,
+      "MapOutApiDistributionCachePolicy",
+      {
+        headerBehavior: cdk.aws_cloudfront.CacheHeaderBehavior.none(),
+        cookieBehavior: cdk.aws_cloudfront.CacheCookieBehavior.none(),
+        queryStringBehavior: cdk.aws_cloudfront.CacheQueryStringBehavior.none(),
+        defaultTtl: cdk.Duration.days(1),
+        maxTtl: cdk.Duration.days(7),
+        minTtl: cdk.Duration.hours(12),
+      }
+    );
+
+    const apiDistribution = new cdk.aws_cloudfront.Distribution(
+      this,
+      "MapOutApiDistribution",
+      {
+        defaultBehavior: {
+          origin: new cdk.aws_cloudfront_origins.HttpOrigin(
+            `${httpApi.httpApiId}.execute-api.${this.region}.amazonaws.com`,
+            {
+              protocolPolicy:
+                cdk.aws_cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+            }
+          ),
+          responseHeadersPolicy: apiDistributionResponseHeadersPolicy,
+          viewerProtocolPolicy:
+            cdk.aws_cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods:
+            cdk.aws_cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+          cachedMethods:
+            cdk.aws_cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
+          cachePolicy: apiDistributionCachePolicy,
+          compress: true,
+        },
+        domainNames: [
+          `${subdomainPrefix}api.map-out.${existingHostedZone.zoneName}`,
+        ],
+        certificate: apiCertificate,
+      }
+    );
+
+    const apiDistributionTarget = new cdk.aws_route53_targets.CloudFrontTarget(
+      apiDistribution
+    );
+
+    new cdk.aws_route53.ARecord(this, "MapOutApiARecord", {
+      zone: existingHostedZone,
+      recordName: `${subdomainPrefix}api.map-out`,
+      target: cdk.aws_route53.RecordTarget.fromAlias(apiDistributionTarget),
+    });
+
+    new cdk.aws_route53.AaaaRecord(this, "MapOutApiAaaaRecord", {
+      zone: existingHostedZone,
+      recordName: `${subdomainPrefix}api.map-out`,
+      target: cdk.aws_route53.RecordTarget.fromAlias(apiDistributionTarget),
+    });
+
+    //#endregion Data Preparation
+
+    //#region Glue
+
     const glueDatabase = new glue.Database(this, "MapOutGlueDatabase", {
       databaseName: "map-out",
     });
@@ -582,6 +724,67 @@ export class MapOutStack extends cdk.Stack {
       }
     );
 
+    //#endregion Glue
+
+    //#region Data Cloudfront
+
+    const dataCertificate = new cdk.aws_certificatemanager.Certificate(
+      this,
+      "MapOutDataCertificate",
+      {
+        domainName: `${subdomainPrefix}data.map-out.${existingHostedZone.zoneName}`,
+        validation:
+          cdk.aws_certificatemanager.CertificateValidation.fromDns(
+            existingHostedZone
+          ),
+      }
+    );
+
+    const dataOriginAccessIdentity =
+      new cdk.aws_cloudfront.OriginAccessIdentity(
+        this,
+        "MapOutDataOriginAccessIdentity"
+      );
+    processedDataBucket.grantRead(dataOriginAccessIdentity);
+
+    const dataDistribution = new cdk.aws_cloudfront.Distribution(
+      this,
+      "MapOutDataDistribution",
+      {
+        defaultBehavior: {
+          origin: new cdk.aws_cloudfront_origins.S3Origin(processedDataBucket, {
+            originAccessIdentity: dataOriginAccessIdentity,
+          }),
+          viewerProtocolPolicy:
+            cdk.aws_cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        },
+        domainNames: [
+          `${subdomainPrefix}data.map-out.${existingHostedZone.zoneName}`,
+        ],
+        certificate: dataCertificate,
+      }
+    );
+
+    const dataCloudfrontTarget = new cdk.aws_route53_targets.CloudFrontTarget(
+      dataDistribution
+    );
+
+    new cdk.aws_route53.ARecord(this, "MapOutDataARecord", {
+      zone: existingHostedZone,
+      recordName: `${subdomainPrefix}data.map-out`,
+      target: cdk.aws_route53.RecordTarget.fromAlias(dataCloudfrontTarget),
+    });
+
+    new cdk.aws_route53.AaaaRecord(this, "MapOutDataAaaaRecord", {
+      zone: existingHostedZone,
+      recordName: `${subdomainPrefix}data.map-out`,
+      target: cdk.aws_route53.RecordTarget.fromAlias(dataCloudfrontTarget),
+    });
+
+    //#endregion Data Cloudfront
+
+    //#region Web Hosting
+
     const hostingBucket = new cdk.aws_s3.Bucket(this, "MapOutHostingBucket", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
@@ -619,14 +822,6 @@ export class MapOutStack extends cdk.Stack {
         include: ["index.html"],
         cacheControl: [cdk.aws_s3_deployment.CacheControl.noCache()],
         prune: false,
-      }
-    );
-
-    const existingHostedZone = cdk.aws_route53.HostedZone.fromLookup(
-      this,
-      "MapOutHostedZone",
-      {
-        domainName: process.env.HOST_ZONE || "vazue.com",
       }
     );
 
@@ -689,5 +884,7 @@ export class MapOutStack extends cdk.Stack {
       recordName: `${subdomainPrefix}map-out`,
       target: cdk.aws_route53.RecordTarget.fromAlias(hostingCloudfrontTarget),
     });
+
+    //#endregion Web Hosting
   }
 }
