@@ -9,8 +9,10 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "deploy:backend": "cdk deploy --require-approval never --outputs-file ./web-client/src/amplify/config.json MapOutBackendStack",
-    "deploy:frontend": "cdk deploy --require-approval never MapOutWebClientStack"
+    "deploy:backend:local": "cdk deploy --require-approval never --outputs-file ./web-client/src/amplify/cdk-output.json MapOutBackendStack-local",
+    "deploy:backend:main": "cdk deploy --require-approval never --no-rollback --outputs-file ./web-client/src/amplify/cdk-output.json MapOutBackendStack-main",
+    "deploy:frontend:local": "cdk deploy --require-approval never MapOutWebClientStack-local",
+    "deploy:frontend:main": "cdk deploy --require-approval never MapOutWebClientStack-main"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

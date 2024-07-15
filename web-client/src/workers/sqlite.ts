@@ -237,7 +237,8 @@ const main = async () => {
     async (event: MessageEvent<MessageEventData>) => {
       const dataType = event.data.type;
 
-      if (dataType === "save::route-kmb") {
+      //#region save kmb route
+      if (dataType === "database::save::kmb::route") {
         const data = event.data.data as RouteKmb[];
 
         const sql = `
@@ -268,10 +269,14 @@ const main = async () => {
 
         db.exec(sql);
 
+        self.postMessage({ type: "done::database::save::kmb::route" });
+
         return;
       }
+      //#endregion save kmb route
 
-      if (dataType === "save::route-citybus") {
+      //#region save citybus route
+      if (dataType === "databse::save::citybus::route") {
         const data = event.data.data as RouteCitybus[];
 
         const sql = `
@@ -301,10 +306,14 @@ const main = async () => {
 
         db.exec(sql);
 
+        self.postMessage({ type: "done::database::save::citybus::route" });
+
         return;
       }
+      //#endregion save citybus route
 
-      if (dataType === "save::route-gmb") {
+      //#region save gmb route
+      if (dataType === "database::save::gmb::route") {
         const data = event.data.data as RouteGmb[];
 
         const routeSql = `
@@ -437,10 +446,14 @@ const main = async () => {
 
         db.exec(headwaySql);
 
+        self.postMessage({ type: "done::database::save::gmb::route" });
+
         return;
       }
+      //#endregion save gmb route
 
-      if (dataType === "save::route-stop-kmb") {
+      //#region save kmb route-stop
+      if (dataType === "database::save::kmb::route-stop") {
         const data = event.data.data as RouteStopKmb[];
 
         const sql = `
@@ -462,10 +475,14 @@ const main = async () => {
 
         db.exec(sql);
 
+        self.postMessage({ type: "done::database::save::kmb::route-stop" });
+
         return;
       }
+      //#endregion save kmb route-stop
 
-      if (dataType === "save::route-stop-citybus") {
+      //#region save citybus route-stop
+      if (dataType === "database::save::citybus::route-stop") {
         if (event.data.data.length === 0) {
           return;
         }
@@ -494,10 +511,14 @@ const main = async () => {
 
         db.exec(sql);
 
+        self.postMessage({ type: "done::database::save::citybus::route-stop" });
+
         return;
       }
+      //#endregion save citybus route-stop
 
-      if (dataType === "save::route-stop-gmb") {
+      //#region save gmb route-stop
+      if (dataType === "database::save::gmb::route-stop") {
         const params = event.data.params as {
           routeId: number;
           routeSeq: number;
@@ -526,10 +547,14 @@ const main = async () => {
 
         db.exec(sql);
 
+        self.postMessage({ type: "done::database::save::gmb::route-stop" });
+
         return;
       }
+      //#endregion save gmb route-stop
 
-      if (dataType === "save::stop-kmb") {
+      //#region save kmb stop
+      if (dataType === "database::save::kmb::stop") {
         const data = event.data.data as StopKmb[];
 
         const sql = `
@@ -554,51 +579,64 @@ const main = async () => {
 
         db.exec(sql);
 
+        self.postMessage({ type: "done::database::save::kmb::stop" });
+
         return;
       }
+      //#endregion save kmb stop
 
-      if (dataType === "save::stop-citybus") {
-        const data = event.data.data as StopCitybus;
+      //#region save citybus stop
+      if (dataType === "database::save::citybus::stop") {
+        const data = event.data.data as StopCitybus[];
 
         const sql = `
-        INSERT OR REPLACE INTO StopCitybus (
-          data_timestamp,
-          lat,
-          long,
-          name_en,
-          name_sc,
-          name_tc,
-          stop
-        ) VALUES (${
-          new Date(data.data_timestamp).getTime() / 1000
-        }, ${parseFloat(data.lat)}, ${parseFloat(
-          data.long
-        )}, '${data.name_en.replace(/'/g, "''")}', '${data.name_sc}', '${
-          data.name_tc
-        }', '${data.stop}')
-      `;
+          INSERT OR REPLACE INTO StopCitybus (
+            data_timestamp,
+            lat,
+            long,
+            name_en,
+            name_sc,
+            name_tc,
+            stop
+          ) VALUES ${data
+            .map(
+              (stop) =>
+                `(${
+                  new Date(stop.data_timestamp).getTime() / 1000
+                }, ${parseFloat(stop.lat)}, ${parseFloat(
+                  stop.long
+                )}, '${stop.name_en.replace(/'/g, "''")}', '${
+                  stop.name_sc
+                }', '${stop.name_tc}', '${stop.stop}')`
+            )
+            .join(", ")}
+        `;
 
         db.exec(sql);
 
+        self.postMessage({ type: "done::database::save::citybus::stop" });
+
         return;
       }
+      //#endregion save citybus stop
 
-      if (dataType === "save::stop-gmb") {
+      //#region save gmb stop
+      if (dataType === "database::save::gmb::stop") {
         const data = event.data.data as StopGmb & { id: string };
 
         const sql = `
-        INSERT OR REPLACE INTO StopGmb (
-          id,
-          coordinates_wgs84_latitude,
-          coordinates_wgs84_longitude,
-          coordinates_hk80_latitude,
-          coordinates_hk80_longitude,
-          enabled,
-          remarks_tc,
-          remarks_sc,
-          remarks_en,
-          data_timestamp
-        ) VALUES (${parseInt(data.id)}, ${data.coordinates.wgs84.latitude}, ${
+          INSERT OR REPLACE INTO StopGmb (
+            id,
+            coordinates_wgs84_latitude,
+            coordinates_wgs84_longitude,
+            coordinates_hk80_latitude,
+            coordinates_hk80_longitude,
+            enabled,
+            remarks_tc,
+            remarks_sc,
+            remarks_en,
+            data_timestamp
+          ) VALUES (${parseInt(data.id)}, ${data.coordinates.wgs84.latitude}, ${
           data.coordinates.wgs84.longitude
         }, ${data.coordinates.hk80.latitude}, ${
           data.coordinates.hk80.longitude
@@ -607,13 +645,17 @@ const main = async () => {
         }, ${data.remarks_sc ? `'${data.remarks_sc}'` : "NULL"}, ${
           data.remarks_en ? `'${data.remarks_en}'` : "NULL"
         }, ${new Date(data.data_timestamp).getTime() / 1000})
-      `;
+        `;
 
         db.exec(sql);
 
+        self.postMessage({ type: "done::database::save::gmb::stop" });
+
         return;
       }
+      //# endregion save gmb stop
 
+      //#region get nearby stops
       if (dataType === "map-bounds") {
         const bounds = {
           lat: {
@@ -627,11 +669,11 @@ const main = async () => {
         };
 
         const stopKmbSql = `
-        SELECT *
-        FROM StopKmb
-        WHERE lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
-        AND long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
-      `;
+          SELECT *
+          FROM StopKmb
+          WHERE lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
+          AND long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
+        `;
 
         const stopsKmb = db.exec({
           sql: stopKmbSql,
@@ -645,13 +687,13 @@ const main = async () => {
         });
 
         const routeKmbSql = `
-        SELECT *
-        FROM RouteKmb
-        JOIN RouteStopKmb ON RouteKmb.route = RouteStopKmb.route
-        JOIN StopKmb ON RouteStopKmb.stop = StopKmb.stop
-        WHERE StopKmb.lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
-        AND StopKmb.long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
-      `;
+          SELECT *
+          FROM RouteKmb
+          JOIN RouteStopKmb ON RouteKmb.route = RouteStopKmb.route
+          JOIN StopKmb ON RouteStopKmb.stop = StopKmb.stop
+          WHERE StopKmb.lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
+          AND StopKmb.long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
+        `;
 
         const routesKmb = db.exec({
           sql: routeKmbSql,
@@ -665,11 +707,11 @@ const main = async () => {
         });
 
         const stopCitybusSql = `
-        SELECT *
-        FROM StopCitybus
-        WHERE lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
-        AND long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
-      `;
+          SELECT *
+          FROM StopCitybus
+          WHERE lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
+          AND long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
+        `;
 
         const stopsCitybus = db.exec({
           sql: stopCitybusSql,
@@ -683,13 +725,13 @@ const main = async () => {
         });
 
         const routeCitybusSql = `
-        SELECT *
-        FROM RouteCitybus
-        JOIN RouteStopCitybus ON RouteCitybus.route = RouteStopCitybus.route
-        JOIN StopCitybus ON RouteStopCitybus.stop = StopCitybus.stop
-        WHERE StopCitybus.lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
-        AND StopCitybus.long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
-      `;
+          SELECT *
+          FROM RouteCitybus
+          JOIN RouteStopCitybus ON RouteCitybus.route = RouteStopCitybus.route
+          JOIN StopCitybus ON RouteStopCitybus.stop = StopCitybus.stop
+          WHERE StopCitybus.lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
+          AND StopCitybus.long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
+        `;
 
         const routesCitybus = db.exec({
           sql: routeCitybusSql,
@@ -704,9 +746,28 @@ const main = async () => {
 
         return;
       }
+      //#endregion get nearby stops
 
       if (dataType === "ping") {
         self.postMessage({ type: "pong" });
+
+        return;
+      }
+
+      if (dataType === "database::truncate") {
+        db.exec("DELETE FROM RouteKmb");
+        db.exec("DELETE FROM RouteCitybus");
+        db.exec("DELETE FROM RouteGmb");
+        db.exec("DELETE FROM RouteDirectionGmb");
+        db.exec("DELETE FROM RouteHeadwayGmb");
+        db.exec("DELETE FROM RouteStopKmb");
+        db.exec("DELETE FROM RouteStopCitybus");
+        db.exec("DELETE FROM RouteStopGmb");
+        db.exec("DELETE FROM StopKmb");
+        db.exec("DELETE FROM StopCitybus");
+        db.exec("DELETE FROM StopGmb");
+
+        self.postMessage({ type: "done::database::truncate" });
 
         return;
       }

@@ -7,10 +7,8 @@ import { Construct } from "constructs";
 import "dotenv/config";
 import path = require("path");
 
-const subdomainPrefix =
-  process.env.GITHUB_REF_NAME === "main"
-    ? ""
-    : `${process.env.GITHUB_REF_NAME}.`;
+const env = process.env.GITHUB_REF_NAME;
+const subdomainPrefix = env === "main" ? "" : `${env}.`;
 
 export class MapOutBackendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -216,8 +214,7 @@ export class MapOutBackendStack extends cdk.Stack {
       cdk.aws_s3.EventType.OBJECT_CREATED,
       new cdk.aws_s3_notifications.LambdaDestination(
         copyRawToProcessingFunction
-      ),
-      { prefix: "bus/" }
+      )
     );
 
     const emptyProcessingBucketFunction = new RustFunction(
@@ -355,7 +352,7 @@ export class MapOutBackendStack extends cdk.Stack {
       );
 
     httpApi.addRoutes({
-      path: "/data/update",
+      path: "/update",
       methods: [cdk.aws_apigatewayv2.HttpMethod.GET],
       integration: apiGetDataUpdateIntegration,
     });
@@ -466,16 +463,14 @@ export class MapOutBackendStack extends cdk.Stack {
 
     //#region Glue
 
-    const glueDatabase = new glue.Database(this, "MapOutGlueDatabase", {
-      databaseName: "map-out",
-    });
+    const glueDatabase = new glue.Database(this, "MapOutGlueDatabase", {});
 
     const citybusRouteTable = new glue.S3Table(
       this,
       "MapOutCitybusRouteTable",
       {
         bucket: processingDataBucket,
-        s3Prefix: "bus/citybus/route/",
+        s3Prefix: "citybus/route/",
         database: glueDatabase,
         dataFormat: glue.DataFormat.JSON,
         columns: [
@@ -503,7 +498,7 @@ export class MapOutBackendStack extends cdk.Stack {
 
     const citybusStopTable = new glue.S3Table(this, "MapOutCitybusStopTable", {
       bucket: processingDataBucket,
-      s3Prefix: "bus/citybus/stop/",
+      s3Prefix: "citybus/stop/",
       database: glueDatabase,
       dataFormat: glue.DataFormat.JSON,
       columns: [
@@ -531,7 +526,7 @@ export class MapOutBackendStack extends cdk.Stack {
       "MapOutCitybusRouteStopTable",
       {
         bucket: processingDataBucket,
-        s3Prefix: "bus/citybus/route-stop/",
+        s3Prefix: "citybus/route-stop/",
         database: glueDatabase,
         dataFormat: glue.DataFormat.JSON,
         columns: [
@@ -556,7 +551,7 @@ export class MapOutBackendStack extends cdk.Stack {
 
     const kmbRouteTable = new glue.S3Table(this, "MapOutKmbRouteTable", {
       bucket: processingDataBucket,
-      s3Prefix: "bus/kmb/route/",
+      s3Prefix: "kmb/route/",
       database: glueDatabase,
       dataFormat: glue.DataFormat.JSON,
       columns: [
@@ -583,7 +578,7 @@ export class MapOutBackendStack extends cdk.Stack {
 
     const kmbStopTable = new glue.S3Table(this, "MapOutKmbStopTable", {
       bucket: processingDataBucket,
-      s3Prefix: "bus/kmb/stop/",
+      s3Prefix: "kmb/stop/",
       database: glueDatabase,
       dataFormat: glue.DataFormat.JSON,
       columns: [
@@ -610,7 +605,7 @@ export class MapOutBackendStack extends cdk.Stack {
       "MapOutKmbRouteStopTable",
       {
         bucket: processingDataBucket,
-        s3Prefix: "bus/kmb/route-stop/",
+        s3Prefix: "kmb/route-stop/",
         database: glueDatabase,
         dataFormat: glue.DataFormat.JSON,
         columns: [
@@ -632,12 +627,12 @@ export class MapOutBackendStack extends cdk.Stack {
       }
     );
 
-    const busEtlJob = new glue.Job(this, "MapOutBusEtlJob", {
+    const etlJob = new glue.Job(this, "MapOutEtlJob", {
       executable: glue.JobExecutable.pythonEtl({
         glueVersion: glue.GlueVersion.V4_0,
         pythonVersion: glue.PythonVersion.THREE,
         script: glue.Code.fromAsset(
-          path.join(__dirname, "..", "glue", "map-out-bus-job.py")
+          path.join(__dirname, "..", "glue", "map-out-etl-job.py")
         ),
       }),
       defaultArguments: {
@@ -662,12 +657,12 @@ export class MapOutBackendStack extends cdk.Stack {
       timeout: cdk.Duration.minutes(10),
       executionClass: glue.ExecutionClass.FLEX,
     });
-    processingDataBucket.grantRead(busEtlJob);
-    processedDataBucket.grantWrite(busEtlJob);
+    processingDataBucket.grantRead(etlJob);
+    processedDataBucket.grantWrite(etlJob);
 
     const startEtlJobPolicy = new cdk.aws_iam.PolicyStatement({
       actions: ["glue:StartJobRun"],
-      resources: [busEtlJob.jobArn],
+      resources: [etlJob.jobArn],
     });
 
     const startEtlJobFunction = new RustFunction(
@@ -684,7 +679,7 @@ export class MapOutBackendStack extends cdk.Stack {
         architecture: cdk.aws_lambda.Architecture.ARM_64,
         environment: {
           DYNAMODB_TABLE_NAME: dynamodbTable.tableName,
-          GLUE_JOB_NAME: busEtlJob.jobName,
+          GLUE_JOB_NAME: etlJob.jobName,
         },
         timeout: cdk.Duration.minutes(1),
       }
@@ -825,12 +820,12 @@ export class MapOutBackendStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "MapOutHttpDataApiEndpoint", {
       value: `https://${subdomainPrefix}api.map-out.${existingHostedZone.zoneName}`,
-      exportName: "MapOutHttpDataApiEndpoint",
+      exportName: `MapOutHttpDataApiEndpoint-${env}`,
     });
 
     new cdk.CfnOutput(this, "MapOutHttpDataEndpoint", {
       value: `https://${subdomainPrefix}data.map-out.${existingHostedZone.zoneName}`,
-      exportName: "MapOutHttpDataEndpoint",
+      exportName: `MapOutHttpDataEndpoint-${env}`,
     });
 
     //#endregion Output

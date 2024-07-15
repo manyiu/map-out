@@ -15,7 +15,7 @@ async fn function_handler(
         .table_name(env::var("DYNAMODB_TABLE_NAME")?)
         .key_condition_expression("#pk = :pk")
         .expression_attribute_names("#pk", "pk")
-        .expression_attribute_values(":pk", AttributeValue::S("update#bus".to_string()))
+        .expression_attribute_values(":pk", AttributeValue::S("update".to_string()))
         .scan_index_forward(false)
         .limit(1)
         .send()
@@ -41,7 +41,7 @@ async fn function_handler(
     let mut processed_data_object_response = s3_client
         .list_objects_v2()
         .bucket(env::var("PROCESSED_DATA_BUCKET")?)
-        .prefix(format!("bus/{}/", updated_at))
+        .prefix(format!("{}/", updated_at))
         .into_paginator()
         .send();
 
@@ -58,7 +58,7 @@ async fn function_handler(
     let _ = dynamodb_client
         .put_item()
         .table_name(env::var("DYNAMODB_TABLE_NAME")?)
-        .item("pk", AttributeValue::S("data#bus".to_string()))
+        .item("pk", AttributeValue::S("data".to_string()))
         .item(
             "sk",
             AttributeValue::S(format!("created_at#{}", updated_at)),

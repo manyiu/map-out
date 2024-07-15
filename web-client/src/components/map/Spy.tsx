@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useMapEvents } from "react-leaflet";
 import { useBoundsStore } from "../../stores/bounds";
-import worker from "../../workers";
+import { sqliteWorker } from "../../workers";
 
 interface SpyProps {
   ready: boolean;
@@ -14,7 +14,7 @@ const Spy = ({ ready }: SpyProps) => {
     dragend: () => {
       setBounds(map.getBounds());
 
-      worker.postMessage({
+      sqliteWorker.postMessage({
         type: "map-bounds",
         data: map.getBounds(),
       });
@@ -22,7 +22,7 @@ const Spy = ({ ready }: SpyProps) => {
     zoomend: () => {
       setBounds(map.getBounds());
 
-      worker.postMessage({
+      sqliteWorker.postMessage({
         type: "map-bounds",
         data: map.getBounds(),
       });
@@ -32,17 +32,17 @@ const Spy = ({ ready }: SpyProps) => {
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (ready) {
-        worker.postMessage({
+        sqliteWorker.postMessage({
           type: "ping",
         });
       }
     }, 1000);
 
-    worker.addEventListener("message", (event) => {
+    sqliteWorker.addEventListener("message", (event) => {
       if (event.data.type === "pong") {
         setBounds(map.getBounds());
 
-        worker.postMessage({
+        sqliteWorker.postMessage({
           type: "map-bounds",
           data: map.getBounds(),
         });

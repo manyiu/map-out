@@ -247,3 +247,8 @@ export interface DataGroupedByStop {
   long: number;
   routes: DataGroupedByStopRoute[];
 }
+
+export interface MapOutApiDataUpdateBody {
+  timestamp: number;
+  files: string[];
+}

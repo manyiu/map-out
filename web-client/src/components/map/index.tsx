@@ -1,10 +1,9 @@
-import { Card, CardBody, CardHeader } from "@chakra-ui/react";
 import "leaflet/dist/leaflet.css";
 import { useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import useGeolocation from "../../hooks/useGeolocation";
 import useNearByCitybus from "../../hooks/useNearByCitybus";
-import useNearByGmb from "../../hooks/useNearByGmb";
+// import useNearByGmb from "../../hooks/useNearByGmb";
 import useNearByKmb from "../../hooks/useNearByKmb";
 import Spy from "./Spy";
 import { MapProps, SourceAttribution, SourceUrl } from "./types";
@@ -14,7 +13,7 @@ const Map = (props: MapProps) => {
   const { geolocation } = useGeolocation();
   const { stop: stopKmb } = useNearByKmb();
   const { stop: stopCitybus } = useNearByCitybus();
-  const { dataGroupedByStop } = useNearByGmb();
+  // const { dataGroupedByStop } = useNearByGmb();
 
   if (!geolocation) {
     return null;
@@ -44,7 +43,7 @@ const Map = (props: MapProps) => {
           <Popup>{stop.name_en}</Popup>
         </Marker>
       ))}
-      {dataGroupedByStop.map((stop) => (
+      {/* {dataGroupedByStop.map((stop) => (
         <Marker key={stop.stopId} position={[stop.lat, stop.long]}>
           <Popup>
             {stop.routes.map((route) => (
@@ -72,7 +71,7 @@ const Map = (props: MapProps) => {
             ))}
           </Popup>
         </Marker>
-      ))}
+      ))} */}
     </MapContainer>
   );
 };

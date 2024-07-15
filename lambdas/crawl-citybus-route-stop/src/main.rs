@@ -70,7 +70,7 @@ async fn function_handler(
         serde_json::from_str(&event.payload.records[0].sns.message).unwrap();
     let new_update_date = topic_message.timestamp;
     let dynamodb_table_name = env::var("DYNAMODB_TABLE_NAME").unwrap();
-    let dynamodb_pk = "update#bus";
+    let dynamodb_pk = "update";
     let dynamodb_sk = format!("created_at#{}", new_update_date);
 
     let route_response = http_client
@@ -116,7 +116,7 @@ async fn function_handler(
         .put_object()
         .bucket(s3_bucket.to_string())
         .key(format!(
-            "bus/{}/citybus/route/list.json",
+            "{}/citybus/route/list.json",
             topic_message.timestamp
         ))
         .body(route_json_byte_stream)
@@ -138,7 +138,7 @@ async fn function_handler(
             let new_update_date = topic_message.timestamp;
             let dynamodb_client_clone = dynamodb_client.clone();
             let dynamodb_table_name = env::var("DYNAMODB_TABLE_NAME").unwrap();
-            let dynamodb_pk = "update#bus";
+            let dynamodb_pk = "update#data";
             let dynamodb_sk = format!("created_at#{}", new_update_date);
 
             let fut = task::spawn(async move {
@@ -197,7 +197,7 @@ async fn function_handler(
                         ),
                         s3_bucket: s3_bucket_clone.to_string(),
                         s3_key: format!(
-                            "bus/{}/citybus/stop/{}.json",
+                            "{}/citybus/stop/{}.json",
                             new_update_date, route_stop.stop
                         ),
                         dynamodb_pk: dynamodb_pk.to_string(),
@@ -227,7 +227,7 @@ async fn function_handler(
                     .put_object()
                     .bucket(s3_bucket_clone.to_string())
                     .key(format!(
-                        "bus/{}/citybus/route-stop/{}-{}.json",
+                        "{}/citybus/route-stop/{}-{}.json",
                         new_update_date, route_clone.route, direction_clone
                     ))
                     .body(json_byte_stream)

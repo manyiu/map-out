@@ -32,27 +32,27 @@ KMBStopSource_node1720722561227 = glueContext.create_dynamic_frame.from_catalog(
 KMBRouteStopSource_node1720722659589 = glueContext.create_dynamic_frame.from_catalog(database=args['map_out_database'], table_name=args['kmb_route_stop_table'], transformation_ctx="KMBRouteStopSource_node1720722659589")
 
 # Script generated for node Citybus Route Output
-CitybusRouteOutput_node1720720085301 = glueContext.write_dynamic_frame.from_options(frame=CitybusRouteSource_node1720719425796, connection_type="s3", format="json", connection_options={"path": 's3://' + args['s3_output_bucket'] + '/bus/' + args['updated_at'] + args['citybus_route_s3_output_path'], "partitionKeys": []}, transformation_ctx="CitybusRouteOutput_node1720720085301")
+CitybusRouteOutput_node1720720085301 = glueContext.write_dynamic_frame.from_options(frame=CitybusRouteSource_node1720719425796, connection_type="s3", format="json", connection_options={"path": 's3://' + args['s3_output_bucket'] + '/' + args['updated_at'] + args['citybus_route_s3_output_path'], "partitionKeys": []}, transformation_ctx="CitybusRouteOutput_node1720720085301")
 
 CityBusStopPartitioned_dataframe = CitybusStopSource_node1720721664195.toDF().repartition(1)
 CitybusStopPartitioned_dynamicframe = DynamicFrame.fromDF(CityBusStopPartitioned_dataframe, glueContext, "CitybusStopPartitioned_dynamicframe")
 
 # Script generated for node Citybus Stop Output
-CitybusStopOutput_node1720722288742 = glueContext.write_dynamic_frame.from_options(frame=CitybusStopPartitioned_dynamicframe, connection_type="s3", format="json", connection_options={"path": 's3://' + args['s3_output_bucket'] + '/bus/' + args['updated_at'] + args['citybus_stop_s3_output_path'], "partitionKeys": []}, transformation_ctx="CitybusStopOutput_node1720722288742")
+CitybusStopOutput_node1720722288742 = glueContext.write_dynamic_frame.from_options(frame=CitybusStopPartitioned_dynamicframe, connection_type="s3", format="json", connection_options={"path": 's3://' + args['s3_output_bucket'] + '/' + args['updated_at'] + args['citybus_stop_s3_output_path'], "partitionKeys": []}, transformation_ctx="CitybusStopOutput_node1720722288742")
 
 CityBusRouteStopPartitioned_dataframe = CitybusRouteStopSource_node1720722340345.toDF().repartition(1)
 CitybusRouteStopPartitioned_dynamicframe = DynamicFrame.fromDF(CityBusRouteStopPartitioned_dataframe, glueContext, "CitybusRouteStopPartitioned_dynamicframe")
 
 # Script generated for node Citybus Route Stop Output
-CitybusRouteStopOutput_node1720722429935 = glueContext.write_dynamic_frame.from_options(frame=CitybusRouteStopPartitioned_dynamicframe, connection_type="s3", format="json", connection_options={"path": 's3://' + args['s3_output_bucket'] + '/bus/' + args['updated_at'] + args['citybus_route_stop_s3_output_path'], "partitionKeys": []}, transformation_ctx="CitybusRouteStopOutput_node1720722429935")
+CitybusRouteStopOutput_node1720722429935 = glueContext.write_dynamic_frame.from_options(frame=CitybusRouteStopPartitioned_dynamicframe, connection_type="s3", format="json", connection_options={"path": 's3://' + args['s3_output_bucket'] + '/' + args['updated_at'] + args['citybus_route_stop_s3_output_path'], "partitionKeys": []}, transformation_ctx="CitybusRouteStopOutput_node1720722429935")
 
 # Script generated for node KMB Route Output
-KMBRouteOutput_node1720722520866 = glueContext.write_dynamic_frame.from_options(frame=KMBRouteSource_node1720722470940, connection_type="s3", format="json", connection_options={"path": 's3://' + args['s3_output_bucket'] + '/bus/' + args['updated_at'] + args['kmb_route_s3_output_path'], "partitionKeys": []}, transformation_ctx="KMBRouteOutput_node1720722520866")
+KMBRouteOutput_node1720722520866 = glueContext.write_dynamic_frame.from_options(frame=KMBRouteSource_node1720722470940, connection_type="s3", format="json", connection_options={"path": 's3://' + args['s3_output_bucket'] + '/' + args['updated_at'] + args['kmb_route_s3_output_path'], "partitionKeys": []}, transformation_ctx="KMBRouteOutput_node1720722520866")
 
 # Script generated for node KMB Stop Output
-KMBStopOutput_node1720722612250 = glueContext.write_dynamic_frame.from_options(frame=KMBStopSource_node1720722561227, connection_type="s3", format="json", connection_options={"path": 's3://' + args['s3_output_bucket'] + '/bus/' + args['updated_at'] + args['kmb_stop_s3_output_path'], "partitionKeys": []}, transformation_ctx="KMBStopOutput_node1720722612250")
+KMBStopOutput_node1720722612250 = glueContext.write_dynamic_frame.from_options(frame=KMBStopSource_node1720722561227, connection_type="s3", format="json", connection_options={"path": 's3://' + args['s3_output_bucket'] + '/' + args['updated_at'] + args['kmb_stop_s3_output_path'], "partitionKeys": []}, transformation_ctx="KMBStopOutput_node1720722612250")
 
 # Script generated for node KMB Route Stop Output
-KMBRouteStopOutput_node1720722716888 = glueContext.write_dynamic_frame.from_options(frame=KMBRouteStopSource_node1720722659589, connection_type="s3", format="json", connection_options={"path": 's3://' + args['s3_output_bucket'] + '/bus/' + args['updated_at'] + args['kmb_route_stop_s3_output_path'], "partitionKeys": []}, transformation_ctx="KMBRouteStopOutput_node1720722716888")
+KMBRouteStopOutput_node1720722716888 = glueContext.write_dynamic_frame.from_options(frame=KMBRouteStopSource_node1720722659589, connection_type="s3", format="json", connection_options={"path": 's3://' + args['s3_output_bucket'] + '/' + args['updated_at'] + args['kmb_route_stop_s3_output_path'], "partitionKeys": []}, transformation_ctx="KMBRouteStopOutput_node1720722716888")
 
 job.commit()

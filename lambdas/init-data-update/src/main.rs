@@ -39,7 +39,7 @@ async fn function_handler(
     let raw_s3_bucket = env::var("RAW_DATA_BUCKET").unwrap();
     let processing_s3_bucket = env::var("PROCESSING_DATA_BUCKET").unwrap();
     let dynamodb_table_name = env::var("DYNAMODB_TABLE_NAME").unwrap();
-    let dynamodb_pk = "update#bus";
+    let dynamodb_pk = "update";
     let dynamodb_sk = format!("created_at#{}", timestamp);
     let sns_topice_arn = env::var("UPDATE_DATA_TOPIC_ARN").unwrap();
 
@@ -118,7 +118,7 @@ async fn function_handler(
     let get_kmb_route_message = GenericCrawlerMessage {
         url: "https://data.etabus.gov.hk/v1/transport/kmb/route".to_string(),
         s3_bucket: env::var("RAW_DATA_BUCKET").unwrap(),
-        s3_key: format!("bus/{}/kmb/route/list.json", timestamp),
+        s3_key: format!("{}/kmb/route/list.json", timestamp),
         dynamodb_pk: dynamodb_pk.to_string(),
         dynamodb_sk: dynamodb_sk.to_string(),
     };
@@ -143,7 +143,7 @@ async fn function_handler(
     let get_kmb_stop_message = GenericCrawlerMessage {
         url: "https://data.etabus.gov.hk/v1/transport/kmb/stop".to_string(),
         s3_bucket: env::var("RAW_DATA_BUCKET").unwrap(),
-        s3_key: format!("bus/{}/kmb/stop/list.json", timestamp),
+        s3_key: format!("{}/kmb/stop/list.json", timestamp),
         dynamodb_pk: dynamodb_pk.to_string(),
         dynamodb_sk: dynamodb_sk.to_string(),
     };
@@ -168,7 +168,7 @@ async fn function_handler(
     let get_kmb_route_stop_message = GenericCrawlerMessage {
         url: "https://data.etabus.gov.hk/v1/transport/kmb/route-stop".to_string(),
         s3_bucket: raw_s3_bucket,
-        s3_key: format!("bus/{}/kmb/route-stop/list.json", timestamp),
+        s3_key: format!("{}/kmb/route-stop/list.json", timestamp),
         dynamodb_pk: dynamodb_pk.to_string(),
         dynamodb_sk: dynamodb_sk.to_string(),
     };

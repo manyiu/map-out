@@ -5,11 +5,9 @@ import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import { persister, queryClient } from "./repositories/queryClient";
 import theme from "./theme.ts";
-import "./workers";
+import { fetchWorker } from "./workers";
 
-import { fetchWorker } from "./workers/index.ts";
-
-fetchWorker.postMessage({ type: "fetch::kmb" });
+fetchWorker.postMessage({ type: "fetch::update" });
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

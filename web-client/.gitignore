@@ -23,5 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Include workers
-!src/workers/*.js
+# CDK Output File
+src/amplify/cdk-output.json
+
+.env
