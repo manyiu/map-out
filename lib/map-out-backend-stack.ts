@@ -346,13 +346,7 @@ export class MapOutBackendStack extends cdk.Stack {
     );
     dynamodbTable.grantReadData(apiGetDataUpdateFunction);
 
-    const httpApi = new cdk.aws_apigatewayv2.HttpApi(this, "MapOutHttpApi", {
-      corsPreflight: {
-        allowHeaders: ["*"],
-        allowMethods: [cdk.aws_apigatewayv2.CorsHttpMethod.GET],
-        allowOrigins: ["*"],
-      },
-    });
+    const httpApi = new cdk.aws_apigatewayv2.HttpApi(this, "MapOutHttpApi", {});
 
     const apiGetDataUpdateIntegration =
       new cdk.aws_apigatewayv2_integrations.HttpLambdaIntegration(
@@ -386,6 +380,14 @@ export class MapOutBackendStack extends cdk.Stack {
       }
     );
 
+    const apiDistributionResponseHeadersPolicyAccessControlAllowOrigins = [
+      `https://${subdomainPrefix}map-out.vazue.com`,
+    ];
+
+    if (process.env.GITHUB_REF_NAME === "local") {
+      apiDistributionResponseHeadersPolicyAccessControlAllowOrigins.push(`*`);
+    }
+
     const apiDistributionResponseHeadersPolicy =
       new cdk.aws_cloudfront.ResponseHeadersPolicy(
         this,
@@ -395,9 +397,8 @@ export class MapOutBackendStack extends cdk.Stack {
             accessControlAllowCredentials: false,
             accessControlAllowHeaders: ["*"],
             accessControlAllowMethods: ["GET"],
-            accessControlAllowOrigins: [
-              `https://${subdomainPrefix}map-out.vazue.com`,
-            ],
+            accessControlAllowOrigins:
+              apiDistributionResponseHeadersPolicyAccessControlAllowOrigins,
             originOverride: true,
           },
         }
@@ -747,6 +748,39 @@ export class MapOutBackendStack extends cdk.Stack {
       );
     processedDataBucket.grantRead(dataOriginAccessIdentity);
 
+    const dataDistributionResponseHeadersPolicyAccessControlAllowOrigins = [
+      `https://${subdomainPrefix}map-out.vazue.com`,
+    ];
+
+    if (process.env.GITHUB_REF_NAME === "local") {
+      dataDistributionResponseHeadersPolicyAccessControlAllowOrigins.push(`*`);
+    }
+
+    const dataDistributionResponseHeadersPolicy =
+      new cdk.aws_cloudfront.ResponseHeadersPolicy(
+        this,
+        "MapOutDataDistributionResponseHeadersPolicy",
+        {
+          corsBehavior: {
+            accessControlAllowCredentials: false,
+            accessControlAllowHeaders: ["*"],
+            accessControlAllowMethods: ["GET"],
+            accessControlAllowOrigins:
+              dataDistributionResponseHeadersPolicyAccessControlAllowOrigins,
+            originOverride: true,
+          },
+          customHeadersBehavior: {
+            customHeaders: [
+              {
+                header: "Cache-Control",
+                value: "max-age=31536000, immutable",
+                override: false,
+              },
+            ],
+          },
+        }
+      );
+
     const dataDistribution = new cdk.aws_cloudfront.Distribution(
       this,
       "MapOutDataDistribution",
@@ -755,8 +789,12 @@ export class MapOutBackendStack extends cdk.Stack {
           origin: new cdk.aws_cloudfront_origins.S3Origin(processedDataBucket, {
             originAccessIdentity: dataOriginAccessIdentity,
           }),
+          responseHeadersPolicy: dataDistributionResponseHeadersPolicy,
           viewerProtocolPolicy:
             cdk.aws_cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cdk.aws_cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+          cachePolicy: cdk.aws_cloudfront.CachePolicy.CACHING_OPTIMIZED,
+          compress: true,
         },
         domainNames: [
           `${subdomainPrefix}data.map-out.${existingHostedZone.zoneName}`,
