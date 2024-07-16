@@ -37,7 +37,11 @@ const main = async () => {
         const dataUpdateFetchFilePromises = dataUpdateJson.files.map(
           async (filePath) =>
             fetch(
-              `${cdkOutput.MapOutBackendStack.MapOutHttpDataEndpoint}/${filePath}`
+              `${
+                cdkOutput[
+                  `MapOutBackendStack-${import.meta.env.VITE_GITHUB_REF_NAME}`
+                ].MapOutHttpDataEndpoint
+              }/${filePath}`
             )
         );
 
@@ -57,7 +61,7 @@ const main = async () => {
 
           const jsonLines = lines.map((line) => JSON.parse(line));
 
-          const [, timestamp, company, dataType] = filePaths[i].split("/");
+          const [timestamp, company, dataType] = filePaths[i].split("/");
 
           self.postMessage({
             type: `database::save::${company}::${dataType}`,

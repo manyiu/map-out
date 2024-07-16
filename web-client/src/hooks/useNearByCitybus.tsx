@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { RouteCitybus, StopCitybus } from "../database/types";
-import { sqliteWorker } from "../workers";
+import { dbWorker } from "../workers";
 
 const useNearByCitybus = () => {
   const [stop, setStop] = useState<StopCitybus[]>([]);
   const [route, setRoute] = useState<RouteCitybus[]>([]);
 
-  sqliteWorker.addEventListener("message", (event) => {
+  dbWorker.addEventListener("message", (event) => {
     if (event.data.type === "result::nearby-stop-citybus") {
       setStop(event.data.data);
     }

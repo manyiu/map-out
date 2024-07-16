@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { RouteKmb, StopKmb } from "../database/types";
-import { sqliteWorker } from "../workers";
+import { dbWorker } from "../workers";
 
 const useNearByKmb = () => {
   const [stop, setStop] = useState<StopKmb[]>([]);
   const [route, setRoute] = useState<RouteKmb[]>([]);
 
-  sqliteWorker.addEventListener("message", (event) => {
+  dbWorker.addEventListener("message", (event) => {
     if (event.data.type === "result::nearby-stop-kmb") {
       setStop(event.data.data);
     }

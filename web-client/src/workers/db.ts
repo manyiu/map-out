@@ -754,7 +754,7 @@ const main = async () => {
         return;
       }
 
-      if (dataType === "database::truncate") {
+      if (dataType === "database::clear") {
         db.exec("DELETE FROM RouteKmb");
         db.exec("DELETE FROM RouteCitybus");
         db.exec("DELETE FROM RouteGmb");
@@ -770,6 +770,58 @@ const main = async () => {
         self.postMessage({ type: "done::database::truncate" });
 
         return;
+      }
+
+      if (dataType === "database::check-empty") {
+        const routeKmbCount = db.exec({
+          sql: "SELECT COUNT(*) AS C FROM RouteKmb",
+          rowMode: "$C",
+          returnValue: "resultRows",
+        })[0];
+
+        const routeCitybusCount = db.exec({
+          sql: "SELECT COUNT(*) as C FROM RouteCitybus",
+          rowMode: "$C",
+          returnValue: "resultRows",
+        })[0];
+
+        const routeStopKmbCount = db.exec({
+          sql: "SELECT COUNT(*) as C FROM RouteStopKmb",
+          rowMode: "$C",
+          returnValue: "resultRows",
+        })[0];
+
+        const routeStopCitybusCount = db.exec({
+          sql: "SELECT COUNT(*) as C FROM RouteStopCitybus",
+          rowMode: "$C",
+          returnValue: "resultRows",
+        })[0];
+
+        const stopKmbCount = db.exec({
+          sql: "SELECT COUNT(*) as C FROM StopKmb",
+          rowMode: "$C",
+          returnValue: "resultRows",
+        })[0];
+
+        const stopCitybusCount = db.exec({
+          sql: "SELECT COUNT(*) as C FROM StopCitybus",
+          rowMode: "$C",
+          returnValue: "resultRows",
+        })[0];
+
+        const hasZero = [
+          routeKmbCount,
+          routeCitybusCount,
+          routeStopKmbCount,
+          routeStopCitybusCount,
+          stopKmbCount,
+          stopCitybusCount,
+        ].some((count) => count === 0);
+
+        self.postMessage({
+          type: "result::database::check-empty",
+          data: hasZero,
+        });
       }
     }
   );

@@ -654,7 +654,7 @@ export class MapOutBackendStack extends cdk.Stack {
       },
       workerType: glue.WorkerType.G_1X,
       workerCount: 2,
-      timeout: cdk.Duration.minutes(10),
+      timeout: cdk.Duration.minutes(15),
       executionClass: glue.ExecutionClass.FLEX,
     });
     processingDataBucket.grantRead(etlJob);
