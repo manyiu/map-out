@@ -79,6 +79,28 @@ export class MapOutWebClientStack extends cdk.Stack {
 
     hostingBucket.grantRead(originAccessIdentity);
 
+    const hostingDistributionResponseHeadersPolicy =
+      new cdk.aws_cloudfront.ResponseHeadersPolicy(
+        this,
+        "MapOutHostingDistributionResponseHeadersPolicy",
+        {
+          customHeadersBehavior: {
+            customHeaders: [
+              {
+                header: "Cross-Origin-Embedder-Policy",
+                value: "require-corp",
+                override: false,
+              },
+              {
+                header: "Cross-Origin-Opener-Policy",
+                value: "same-origin",
+                override: false,
+              },
+            ],
+          },
+        }
+      );
+
     const hostingDistribution = new cdk.aws_cloudfront.Distribution(
       this,
       "MapOutDistribution",
@@ -89,6 +111,7 @@ export class MapOutWebClientStack extends cdk.Stack {
           }),
           viewerProtocolPolicy:
             cdk.aws_cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          responseHeadersPolicy: hostingDistributionResponseHeadersPolicy,
         },
         domainNames: [
           `${subdomainPrefix}map-out.${existingHostedZone.zoneName}`,

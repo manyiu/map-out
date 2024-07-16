@@ -17,6 +17,8 @@ import {
 import useNearByKmb from "../../hooks/useNearByKmb";
 import { StopKmb } from "../../repositories/types";
 import { Language, usePreferenceStore } from "../../stores/preference";
+import citybusIcon from "./icons/citybus";
+import kmbIcon from "./icons/kmb";
 import KmbStopEta from "./KmbStopEta";
 import Spy from "./Spy";
 import { MapProps, SourceAttribution, SourceUrl } from "./types";
@@ -98,24 +100,21 @@ const Map = (props: MapProps) => {
           <Marker
             key={stop.stop}
             position={[stop.lat, stop.long]}
+            icon={kmbIcon}
             eventHandlers={{
               click: () => {
                 setSelectedKmbStop(stop);
                 onKmbOpen();
               },
             }}
-          >
-            <Popup>
-              {language === Language.ZH_HK
-                ? stop.name_tc
-                : language === Language.ZH_CN
-                ? stop.name_sc
-                : stop.name_en}
-            </Popup>
-          </Marker>
+          ></Marker>
         ))}
         {stopCitybus.map((stop) => (
-          <Marker key={stop.stop} position={[stop.lat, stop.long]}>
+          <Marker
+            key={stop.stop}
+            position={[stop.lat, stop.long]}
+            icon={citybusIcon}
+          >
             <Popup>
               {language === Language.ZH_HK
                 ? stop.name_tc
