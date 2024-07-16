@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { DataWrapper, KmbStopEta } from "../api/types";
+import { usePreferenceStore } from "../stores/preference";
 
 const useKmbStopEta = (stopId: string | null) => {
+  const refetchInterval = usePreferenceStore((state) => state.refetchInterval);
+
   return useQuery({
     queryKey: ["kmb", "stop-eta", stopId],
     queryFn: async () => {
@@ -21,6 +24,7 @@ const useKmbStopEta = (stopId: string | null) => {
 
       return responseJson.data;
     },
+    refetchInterval,
   });
 };
 

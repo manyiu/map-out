@@ -16,6 +16,7 @@ export interface Preference {
   language: Language;
   mode: Mode;
   radius: number;
+  refetchInterval: number;
 }
 
 const usePreferenceStore = create<Preference>()(
@@ -24,9 +25,11 @@ const usePreferenceStore = create<Preference>()(
       language: Language.ZH_HK,
       mode: Mode.Map,
       radius: 100,
+      refetchInterval: 1000 * 30,
       setLanguage: (language: Language) => set({ language }),
       setMode: (mode: Mode) => set({ mode }),
       setRadius: (radius: number) => set({ radius }),
+      setRefetchInterval: (refetchInterval: number) => set({ refetchInterval }),
     }),
     {
       name: "preference",
