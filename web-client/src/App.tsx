@@ -7,7 +7,7 @@ function App() {
   useDatabase();
 
   return (
-    <Container width="100%" maxWidth="100dvw" padding={0}>
+    <Container width="100%" maxWidth="100dvw" height="100dvh" padding={0}>
       <Map source={Source.OpenStreetMap} zoom={18} />
     </Container>
   );
