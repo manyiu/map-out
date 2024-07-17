@@ -623,7 +623,7 @@ const main = async () => {
         });
 
         const routeKmbSql = `
-          SELECT DISTINCT *
+          SELECT DISTINCT RouteKmb.*
           FROM RouteKmb
           JOIN RouteStopKmb ON RouteKmb.route = RouteStopKmb.route
           JOIN StopKmb ON RouteStopKmb.stop = StopKmb.stop
@@ -661,7 +661,7 @@ const main = async () => {
         });
 
         const routeCitybusSql = `
-          SELECT DISTINCT *
+          SELECT DISTINCT RouteCitybus.*
           FROM RouteCitybus
           JOIN RouteStopCitybus ON RouteCitybus.route = RouteStopCitybus.route
           JOIN StopCitybus ON RouteStopCitybus.stop = StopCitybus.stop
@@ -699,7 +699,7 @@ const main = async () => {
         });
 
         const routeGmbSql = `
-          SELECT DISTINCT *
+          SELECT DISTINCT RouteGmb.*
           FROM RouteGmb
           JOIN RouteStopGmb ON RouteGmb.route_id = RouteStopGmb.route_id
           JOIN StopGmb ON RouteStopGmb.stop_id = StopGmb.stop
