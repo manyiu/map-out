@@ -90,7 +90,9 @@ async fn function_handler(
             .expression_attribute_names("#ERRORS", "error")
             .expression_attribute_values(
                 ":error",
-                AttributeValue::S(route_response.err().unwrap().to_string()),
+                AttributeValue::S(
+                    "https://rt.data.gov.hk/v2/transport/citybus/route/ctb".to_string(),
+                ),
             )
             .send()
             .await;
@@ -162,7 +164,10 @@ async fn function_handler(
                         .expression_attribute_names("#ERRORS", "error")
                         .expression_attribute_values(
                             ":error",
-                            AttributeValue::S(route_stop_response.err().unwrap().to_string()),
+                            AttributeValue::S(format!(
+                                "https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/{}/{}",
+                                route_clone.route, direction_clone
+                            )),
                         )
                         .send()
                         .await;

@@ -219,29 +219,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aws-sdk-sns"
-version = "1.36.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a56bfd79c04b925d52e3754ac347b256a33fea5875f0ad90634c9a5e0e53874"
-dependencies = [
- "aws-credential-types",
- "aws-runtime",
- "aws-smithy-async",
- "aws-smithy-http",
- "aws-smithy-json",
- "aws-smithy-query",
- "aws-smithy-runtime",
- "aws-smithy-runtime-api",
- "aws-smithy-types",
- "aws-smithy-xml",
- "aws-types",
- "http 0.2.12",
- "once_cell",
- "regex-lite",
- "tracing",
-]
-
-[[package]]
 name = "aws-sdk-sso"
 version = "1.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -677,15 +654,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "crawl-gmb-route-stop"
+name = "crawl-gmb-stop"
 version = "0.1.0"
 dependencies = [
  "aws-config",
  "aws-sdk-dynamodb",
  "aws-sdk-s3",
- "aws-sdk-sns",
  "aws_lambda_events",
- "futures",
  "lambda_runtime",
  "openssl",
  "reqwest",

@@ -6,15 +6,56 @@ use aws_lambda_events::event::sns::SnsEvent;
 use aws_sdk_dynamodb::types::AttributeValue;
 use aws_sdk_s3::primitives::ByteStream;
 use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug)]
 struct TopicMessage {
     url: String,
+    stop_id: u32,
     s3_bucket: String,
     s3_key: String,
     dynamodb_pk: String,
     dynamodb_sk: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct Coordinates {
+    latitude: f64,
+    longitude: f64,
+}
+
+#[derive(Deserialize, Debug)]
+struct StopDataCoordinate {
+    wgs84: Coordinates,
+    hk80: Coordinates,
+}
+
+#[derive(Deserialize, Debug)]
+struct StopData {
+    coordinates: StopDataCoordinate,
+    enabled: bool,
+    remarks_tc: Option<String>,
+    remarks_sc: Option<String>,
+    remarks_en: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+struct ResponseWrapper<T> {
+    r#type: String,
+    version: String,
+    generated_timestamp: String,
+    data: T,
+}
+
+#[derive(Serialize, Debug)]
+struct DatabaseStopData {
+    stop: u32,
+    lat: f64,
+    long: f64,
+    enabled: bool,
+    remarks_tc: Option<String>,
+    remarks_sc: Option<String>,
+    remarks_en: Option<String>,
 }
 
 async fn function_handler(
@@ -49,9 +90,24 @@ async fn function_handler(
         panic!("Failed to fetch URL, url: {}", topic_message.url);
     }
 
-    let body = response.unwrap().bytes().await.unwrap();
+    let json = response
+        .unwrap()
+        .json::<ResponseWrapper<StopData>>()
+        .await
+        .unwrap();
 
-    let body_byte_stream = ByteStream::from(body);
+    let stop_data = DatabaseStopData {
+        stop: topic_message.stop_id,
+        lat: json.data.coordinates.wgs84.latitude,
+        long: json.data.coordinates.wgs84.longitude,
+        enabled: json.data.enabled,
+        remarks_tc: json.data.remarks_tc,
+        remarks_sc: json.data.remarks_sc,
+        remarks_en: json.data.remarks_en,
+    };
+
+    let stop_data_json = serde_json::to_string(&stop_data).unwrap();
+    let body_byte_stream = ByteStream::from(stop_data_json.into_bytes());
 
     s3_client
         .put_object()

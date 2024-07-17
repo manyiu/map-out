@@ -5,7 +5,11 @@ use aws_sdk_dynamodb::types::AttributeValue;
 use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_sns::types::MessageAttributeValue;
 use futures::StreamExt;
-use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
+use lambda_runtime::{
+    run, service_fn,
+    tracing::{self},
+    Error, LambdaEvent,
+};
 use serde::{Deserialize, Serialize};
 use tokio::task;
 
@@ -15,8 +19,9 @@ struct TopicMessage {
 }
 
 #[derive(Serialize, Debug)]
-struct GenericCrawlerMessage {
+struct StopCrawlerMessage {
     url: String,
+    stop_id: u32,
     s3_bucket: String,
     s3_key: String,
     dynamodb_pk: String,
@@ -43,16 +48,16 @@ struct RoutesData {
     routes: RoutesDataRoutes,
 }
 
-#[derive(Deserialize, Debug)]
-struct RouteDataDirectionHeadway {
-    weekdays: [bool; 7],
-    public_holiday: bool,
-    headway_seq: u32,
-    start_time: String,
-    end_time: String,
-    frequency: u32,
-    frequency_upper: u32,
-}
+// #[derive(Deserialize, Debug)]
+// struct RouteDataDirectionHeadway {
+//     weekdays: [bool; 7],
+//     public_holiday: bool,
+//     headway_seq: u32,
+//     start_time: String,
+//     end_time: Option<String>,
+//     frequency: Option<u32>,
+//     frequency_upper: Option<u32>,
+// }
 
 #[derive(Deserialize, Debug)]
 struct RouteDataDirection {
@@ -66,7 +71,7 @@ struct RouteDataDirection {
     remarks_tc: Option<String>,
     remarks_sc: Option<String>,
     remarks_en: Option<String>,
-    headways: Vec<RouteDataDirectionHeadway>,
+    // headways: Vec<RouteDataDirectionHeadway>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -114,6 +119,18 @@ struct DatabaseRouteData {
     remarks_en: Option<String>,
 }
 
+#[derive(Serialize, Debug)]
+struct DatabaseRouteStopData {
+    route_id: u32,
+    route_seq: u32,
+    route_code: String,
+    stop_seq: u32,
+    stop_id: u32,
+    name_tc: String,
+    name_sc: String,
+    name_en: String,
+}
+
 async fn function_handler(
     event: LambdaEvent<SnsEvent>,
     s3_client: &aws_sdk_s3::Client,
@@ -132,6 +149,7 @@ async fn function_handler(
 
     let routes_response = http_client
         .get("https://data.etagmb.gov.hk/route")
+        .header("User-Agent", "reqwest")
         .send()
         .await;
 
@@ -147,7 +165,7 @@ async fn function_handler(
             .expression_attribute_names("#ERRORS", "error")
             .expression_attribute_values(
                 ":error",
-                AttributeValue::S(routes_response.err().unwrap().to_string()),
+                AttributeValue::S("https://data.etagmb.gov.hk/route".to_string()),
             )
             .send()
             .await;
@@ -196,6 +214,7 @@ async fn function_handler(
                     "https://data.etagmb.gov.hk/route/{}/{}",
                     region_route[0], region_route[1]
                 ))
+                .header("User-Agent", "reqwest")
                 .send()
                 .await;
 
@@ -211,7 +230,10 @@ async fn function_handler(
                     .expression_attribute_names("#ERRORS", "error")
                     .expression_attribute_values(
                         ":error",
-                        AttributeValue::S(route_response.err().unwrap().to_string()),
+                        AttributeValue::S(format!(
+                            "https://data.etagmb.gov.hk/route/{}/{}",
+                            region_route[0], region_route[1]
+                        )),
                     )
                     .send()
                     .await;
@@ -269,6 +291,7 @@ async fn function_handler(
                             "https://data.etagmb.gov.hk/route-stop/{}/{}",
                             route.route_id, direction.route_seq
                         ))
+                        .header("User-Agent", "reqwest")
                         .send()
                         .await;
 
@@ -286,7 +309,10 @@ async fn function_handler(
                             .expression_attribute_names("#ERRORS", "error")
                             .expression_attribute_values(
                                 ":error",
-                                AttributeValue::S(route_stop_response.err().unwrap().to_string()),
+                                AttributeValue::S(format!(
+                                    "https://data.etagmb.gov.hk/route-stop/{}/{}",
+                                    route.route_id, direction.route_seq
+                                )),
                             )
                             .send()
                             .await;
@@ -303,9 +329,26 @@ async fn function_handler(
                         .await
                         .unwrap();
 
-                    let route_stop_json_ser = serde_json::to_string(&route_stop_json).unwrap();
-                    let route_stop_body_byte_stream =
-                        ByteStream::from(route_stop_json_ser.into_bytes());
+                    let flatten_route_stop_data = route_stop_json
+                        .data
+                        .route_stops
+                        .iter()
+                        .map(|stop| DatabaseRouteStopData {
+                            route_id: route.route_id,
+                            route_seq: direction.route_seq,
+                            route_code: route.route_code.to_string(),
+                            stop_seq: stop.stop_seq,
+                            stop_id: stop.stop_id,
+                            name_tc: stop.name_tc.to_string(),
+                            name_sc: stop.name_sc.to_string(),
+                            name_en: stop.name_en.to_string(),
+                        })
+                        .collect::<Vec<DatabaseRouteStopData>>();
+
+                    let flatten_route_stop_json =
+                        serde_json::to_string(&flatten_route_stop_data).unwrap();
+                    let flatten_route_stop_body_byte_stream =
+                        ByteStream::from(flatten_route_stop_json.into_bytes());
 
                     let _ = s3_client_clone
                         .put_object()
@@ -314,19 +357,20 @@ async fn function_handler(
                             "{}/gmb/route-stop/{}-{}.json",
                             new_update_date, route.route_id, direction.route_seq
                         ))
-                        .body(route_stop_body_byte_stream)
+                        .body(flatten_route_stop_body_byte_stream)
                         .send()
                         .await;
 
                     for stop in route_stop_json.data.route_stops {
                         let get_gmb_stop_message_attribute_value = MessageAttributeValue::builder()
                             .set_data_type(Some("String".to_string()))
-                            .set_string_value(Some("generic-crawler".to_string()))
+                            .set_string_value(Some("gmb-stop-crawler".to_string()))
                             .build()
                             .unwrap();
 
-                        let get_gmb_stop_message = GenericCrawlerMessage {
+                        let get_gmb_stop_message = StopCrawlerMessage {
                             url: format!("https://data.etagmb.gov.hk/stop/{}", stop.stop_id),
+                            stop_id: stop.stop_id,
                             s3_bucket: s3_bucket_clone.to_string(),
                             s3_key: format!("{}/gmb/stop/{}.json", new_update_date, stop.stop_id),
                             dynamodb_pk: dynamodb_pk.to_string(),

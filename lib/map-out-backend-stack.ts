@@ -159,6 +159,72 @@ export class MapOutBackendStack extends cdk.Stack {
       )
     );
 
+    const crawlGmbRouteStopFunction = new RustFunction(
+      this,
+      "MapOutCrawlGmbRouteStopFunction",
+      {
+        manifestPath: path.join(
+          __dirname,
+          "..",
+          "lambdas",
+          "crawl-gmb-route-stop",
+          "Cargo.toml"
+        ),
+        architecture: cdk.aws_lambda.Architecture.ARM_64,
+        environment: {
+          RAW_DATA_BUCKET: rawDataBucket.bucketName,
+          DYNAMODB_TABLE_NAME: dynamodbTable.tableName,
+          UPDATE_DATA_TOPIC_ARN: updateDataTopic.topicArn,
+        },
+        timeout: cdk.Duration.minutes(3),
+      }
+    );
+    rawDataBucket.grantWrite(crawlGmbRouteStopFunction);
+    dynamodbTable.grantWriteData(crawlGmbRouteStopFunction);
+    updateDataTopic.grantPublish(crawlGmbRouteStopFunction);
+    updateDataTopic.addSubscription(
+      new cdk.aws_sns_subscriptions.LambdaSubscription(
+        crawlGmbRouteStopFunction,
+        {
+          filterPolicy: {
+            type: cdk.aws_sns.SubscriptionFilter.stringFilter({
+              allowlist: ["init-data-update", "testing"],
+            }),
+          },
+        }
+      )
+    );
+
+    const crawlGmbStopFunction = new RustFunction(
+      this,
+      "MapOutCrawlGmbStopFunction",
+      {
+        manifestPath: path.join(
+          __dirname,
+          "..",
+          "lambdas",
+          "crawl-gmb-stop",
+          "Cargo.toml"
+        ),
+        architecture: cdk.aws_lambda.Architecture.ARM_64,
+        environment: {
+          DYNAMODB_TABLE_NAME: dynamodbTable.tableName,
+        },
+        timeout: cdk.Duration.minutes(3),
+      }
+    );
+    dynamodbTable.grantWriteData(crawlGmbStopFunction);
+    rawDataBucket.grantWrite(crawlGmbStopFunction);
+    updateDataTopic.addSubscription(
+      new cdk.aws_sns_subscriptions.LambdaSubscription(crawlGmbStopFunction, {
+        filterPolicy: {
+          type: cdk.aws_sns.SubscriptionFilter.stringFilter({
+            allowlist: ["gmb-stop-crawler"],
+          }),
+        },
+      })
+    );
+
     const genericCrawlerFunction = new RustFunction(
       this,
       "MapOutGenericCrawlerFunction",
@@ -627,6 +693,93 @@ export class MapOutBackendStack extends cdk.Stack {
       }
     );
 
+    const gmbRouteTable = new glue.S3Table(this, "MapOutGmbRouteTable", {
+      bucket: processingDataBucket,
+      s3Prefix: "gmb/route/",
+      database: glueDatabase,
+      dataFormat: glue.DataFormat.JSON,
+      columns: [
+        { name: "route_id", type: glue.Schema.INTEGER },
+        { name: "region", type: glue.Schema.STRING },
+        { name: "route_code", type: glue.Schema.STRING },
+        { name: "description_tc", type: glue.Schema.STRING },
+        { name: "description_sc", type: glue.Schema.STRING },
+        { name: "description_en", type: glue.Schema.STRING },
+        { name: "route_seq", type: glue.Schema.INTEGER },
+        { name: "orig_tc", type: glue.Schema.STRING },
+        { name: "orig_sc", type: glue.Schema.STRING },
+        { name: "orig_en", type: glue.Schema.STRING },
+        { name: "dest_tc", type: glue.Schema.STRING },
+        { name: "dest_sc", type: glue.Schema.STRING },
+        { name: "dest_en", type: glue.Schema.STRING },
+        { name: "remarks_tc", type: glue.Schema.STRING },
+        { name: "remarks_sc", type: glue.Schema.STRING },
+        { name: "remarks_en", type: glue.Schema.STRING },
+      ],
+      parameters: {
+        compressionType: "none",
+        typeOfData: "file",
+      },
+      storageParameters: [
+        glue.StorageParameter.compressionType(glue.CompressionType.NONE),
+        glue.StorageParameter.custom("classification", "json"),
+      ],
+    });
+
+    const gmbStopTable = new glue.S3Table(this, "MapOutGmbStopTable", {
+      bucket: processingDataBucket,
+      s3Prefix: "gmb/stop/",
+      database: glueDatabase,
+      dataFormat: glue.DataFormat.JSON,
+      columns: [
+        { name: "stop", type: glue.Schema.INTEGER },
+        { name: "lat", type: glue.Schema.DOUBLE },
+        { name: "long", type: glue.Schema.DOUBLE },
+        { name: "enabled", type: glue.Schema.BOOLEAN },
+        { name: "remarks_tc", type: glue.Schema.STRING },
+        { name: "remarks_sc", type: glue.Schema.STRING },
+        { name: "remarks_en", type: glue.Schema.STRING },
+      ],
+      parameters: {
+        compressionType: "none",
+        typeOfData: "file",
+      },
+      storageParameters: [
+        glue.StorageParameter.compressionType(glue.CompressionType.NONE),
+        glue.StorageParameter.custom("classification", "json"),
+      ],
+    });
+
+    const gmbRouteStopTable = new glue.S3Table(
+      this,
+      "MapOutGmbRouteStopTable",
+      {
+        bucket: processingDataBucket,
+        s3Prefix: "gmb/route-stop/",
+        database: glueDatabase,
+        dataFormat: glue.DataFormat.JSON,
+        columns: [
+          { name: "route_id", type: glue.Schema.INTEGER },
+          { name: "route_seq", type: glue.Schema.INTEGER },
+          { name: "route_code", type: glue.Schema.STRING },
+          { name: "stop_seq", type: glue.Schema.INTEGER },
+          { name: "stop_id", type: glue.Schema.INTEGER },
+          { name: "name_tc", type: glue.Schema.STRING },
+          { name: "name_sc", type: glue.Schema.STRING },
+          { name: "name_en", type: glue.Schema.STRING },
+        ],
+        parameters: {
+          jsonPath: "$[*]",
+          compressionType: "none",
+          typeOfData: "file",
+        },
+        storageParameters: [
+          glue.StorageParameter.compressionType(glue.CompressionType.NONE),
+          glue.StorageParameter.custom("classification", "json"),
+        ],
+      }
+    );
+
     const etlJob = new glue.Job(this, "MapOutEtlJob", {
       executable: glue.JobExecutable.pythonEtl({
         glueVersion: glue.GlueVersion.V4_0,
@@ -643,6 +796,9 @@ export class MapOutBackendStack extends cdk.Stack {
         "--kmb_route_table": kmbRouteTable.tableName,
         "--kmb_stop_table": kmbStopTable.tableName,
         "--kmb_route_stop_table": kmbRouteStopTable.tableName,
+        "--gmb_route_table": gmbRouteTable.tableName,
+        "--gmb_stop_table": gmbStopTable.tableName,
+        "--gmb_route_stop_table": gmbRouteStopTable.tableName,
         "--s3_output_bucket": processedDataBucket.bucketName,
         "--citybus_route_s3_output_path": `/citybus/route/`,
         "--citybus_stop_s3_output_path": `/citybus/stop/`,
@@ -650,11 +806,14 @@ export class MapOutBackendStack extends cdk.Stack {
         "--kmb_route_s3_output_path": `/kmb/route/`,
         "--kmb_stop_s3_output_path": `/kmb/stop/`,
         "--kmb_route_stop_s3_output_path": `/kmb/route-stop/`,
+        "--gmb_route_s3_output_path": `/gmb/route/`,
+        "--gmb_stop_s3_output_path": `/gmb/stop/`,
+        "--gmb_route_stop_s3_output_path": `/gmb/route-stop/`,
         "--updated_at": "0",
       },
       workerType: glue.WorkerType.G_1X,
       workerCount: 2,
-      timeout: cdk.Duration.minutes(15),
+      timeout: cdk.Duration.minutes(30),
       executionClass: glue.ExecutionClass.FLEX,
     });
     processingDataBucket.grantRead(etlJob);
