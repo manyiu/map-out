@@ -253,7 +253,7 @@ const main = async () => {
       //#endregion save kmb route
 
       //#region save citybus route
-      if (dataType === "databse::save::citybus::route") {
+      if (dataType === "database::save::citybus::route") {
         const data = event.data.data as RouteCitybus[];
 
         const sql = `
@@ -717,11 +717,6 @@ const main = async () => {
           type: "result::nearby-route-gmb",
           data: routesGmb,
         });
-
-        console.log("nearby route");
-        console.log(routesKmb);
-        console.log(routesCitybus);
-        console.log(routesGmb);
 
         return;
       }
