@@ -3,8 +3,8 @@ import rawWebpIcon from "../../../assets/citybus.webp";
 
 const citybusIcon = L.icon({
   iconUrl: rawWebpIcon,
-  iconSize: [48, 48],
-  iconAnchor: [24, 24],
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
 });
 
 export default citybusIcon;

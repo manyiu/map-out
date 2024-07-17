@@ -1,12 +1,4 @@
-import "leaflet/dist/leaflet.css";
-import { useState } from "react";
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
-import useGeolocation from "../../hooks/useGeolocation";
-import useNearByCitybus from "../../hooks/useNearByCitybus";
-// import useNearByGmb from "../../hooks/useNearByGmb";
-import { ArrowRightIcon } from "@chakra-ui/icons";
 import {
-  Button,
   Center,
   CircularProgress,
   Grid,
@@ -14,10 +6,17 @@ import {
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
+import "leaflet/dist/leaflet.css";
+import { useState } from "react";
+import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import useGeolocation from "../../hooks/useGeolocation";
+import useNearByCitybus from "../../hooks/useNearByCitybus";
+import useNearByGmb from "../../hooks/useNearByGmb";
 import useNearByKmb from "../../hooks/useNearByKmb";
 import { StopKmb } from "../../repositories/types";
 import { Language, usePreferenceStore } from "../../stores/preference";
 import citybusIcon from "./icons/citybus";
+import gmbIcon from "./icons/gmb";
 import kmbIcon from "./icons/kmb";
 import KmbStopEta from "./KmbStopEta";
 import Spy from "./Spy";
@@ -45,7 +44,7 @@ const Map = (props: MapProps) => {
   const { stop: stopKmb } = useNearByKmb();
   const { stop: stopCitybus } = useNearByCitybus();
   const language = usePreferenceStore((state) => state.language);
-  // const { dataGroupedByStop } = useNearByGmb();
+  const { stop: stopGmb } = useNearByGmb();
 
   if (!geolocation) {
     return (
@@ -57,17 +56,8 @@ const Map = (props: MapProps) => {
           <GridItem>
             <Text>Loading your location...</Text>
             <Text fontSize="xs">
-              You must share your location to use the map mode.
+              You must share your location to use the app.
             </Text>
-          </GridItem>
-          <GridItem>
-            <Button
-              leftIcon={<ArrowRightIcon />}
-              colorScheme="teal"
-              variant="solid"
-            >
-              Switch to List Mode
-            </Button>
           </GridItem>
         </Grid>
       </Center>
@@ -124,35 +114,13 @@ const Map = (props: MapProps) => {
             </Popup>
           </Marker>
         ))}
-        {/* {dataGroupedByStop.map((stop) => (
-        <Marker key={stop.stopId} position={[stop.lat, stop.long]}>
-        <Popup>
-        {stop.routes.map((route) => (
-          <Card key={`${route.routeId}-${route.routeSeq}-${route.stopSeq}`}>
-          <CardHeader>{route.routeCode}</CardHeader>
-          <CardBody>
-          <p>{route.description.en}</p>
-          <p>{route.description.tc}</p>
-          <p>
-          {route.direction.orig.en} - {route.direction.dest.en}
-          </p>
-          <p>{route.stopName.en}</p>
-          <ul>
-          {route.eta.map((eta) => (
-            <li key={eta.etaSeq}>
-            <h3>{eta.etaSeq}</h3>
-            <p>{eta.diff}</p>
-            <p>{eta.timestamp}</p>
-            <p>{eta.remarks.en}</p>
-            </li>
-            ))}
-            </ul>
-            </CardBody>
-            </Card>
-            ))}
-            </Popup>
-            </Marker>
-            ))} */}
+        {stopGmb.map((stop) => (
+          <Marker
+            key={stop.stop}
+            position={[stop.lat, stop.long]}
+            icon={gmbIcon}
+          ></Marker>
+        ))}
       </MapContainer>
     </>
   );

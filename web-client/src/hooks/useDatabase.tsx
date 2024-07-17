@@ -20,6 +20,9 @@ const useDatabase = () => {
         case "database::save::kmb::route":
         case "database::save::kmb::stop":
         case "database::save::kmb::route-stop":
+        case "database::save::gmb::route":
+        case "database::save::gmb::stop":
+        case "database::save::gmb::route-stop":
           dbWorker.postMessage(event.data);
           break;
       }
