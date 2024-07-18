@@ -14,6 +14,7 @@ import useNearByCitybus from "../../hooks/useNearByCitybus";
 import useNearByGmb from "../../hooks/useNearByGmb";
 import useNearByKmb from "../../hooks/useNearByKmb";
 import { GmbStop, StopCitybus, StopKmb } from "../../repositories/types";
+import { usePreferenceStore } from "../../stores/preference";
 import GmbStopEta from "../GmbStopEta";
 import CitybusStopEta from "./CitybusStopEta";
 import citybusIcon from "./icons/citybus";
@@ -21,14 +22,29 @@ import gmbIcon from "./icons/gmb";
 import kmbIcon from "./icons/kmb";
 import KmbStopEta from "./KmbStopEta";
 import Spy from "./Spy";
-import { MapProps, SourceAttribution, SourceUrl } from "./types";
+import { SourceAttribution, SourceUrl } from "./types";
 
-const Map = (props: MapProps) => {
+const i18n = {
+  loading: {
+    en: "Loading your location...",
+    tc: "載入您的位置...",
+    sc: "载入您的位置...",
+  },
+  locationRequired: {
+    en: "You must share your location to use the app.",
+    tc: "您必須分享您的位置才能使用應用程式。",
+    sc: "您必须分享您的位置才能使用应用程序。",
+  },
+};
+
+const Map = () => {
   const [ready, setReady] = useState(false);
   const [selectedKmbStop, setSelectedKmbStop] = useState<StopKmb | null>(null);
   const [selectedCitybusStop, setSelectedCitybusStop] =
     useState<StopCitybus | null>(null);
   const [selectedGmbStop, setSelectedGmbStop] = useState<GmbStop | null>(null);
+  const language = usePreferenceStore((state) => state.language);
+  const source = usePreferenceStore((state) => state.source);
 
   const {
     isOpen: isKmbOpen,
@@ -61,10 +77,8 @@ const Map = (props: MapProps) => {
             <CircularProgress isIndeterminate color="blue.300" />
           </GridItem>
           <GridItem>
-            <Text>Loading your location...</Text>
-            <Text fontSize="xs">
-              You must share your location to use the app.
-            </Text>
+            <Text>{i18n.loading[language]}</Text>
+            <Text fontSize="xs">{i18n.locationRequired[language]}</Text>
           </GridItem>
         </Grid>
       </Center>
@@ -97,14 +111,14 @@ const Map = (props: MapProps) => {
       <MapContainer
         style={{ height: "100dvh", width: "100%" }}
         center={[geolocation?.coords.latitude, geolocation?.coords.longitude]}
-        zoom={props.zoom}
+        zoom={18}
         scrollWheelZoom={"center"}
         whenReady={() => setReady(true)}
       >
         <Spy ready={ready} />
         <TileLayer
-          attribution={SourceAttribution[props.source]}
-          url={SourceUrl[props.source]}
+          attribution={SourceAttribution[source]}
+          url={SourceUrl[source]}
           crossOrigin={"anonymous"}
         />
         {stopKmb.map((stop) => (

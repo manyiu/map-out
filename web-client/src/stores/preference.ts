@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { Source } from "../components/Map/types";
 
 export enum Language {
   EN_US = "en",
@@ -14,10 +15,12 @@ export enum Mode {
 
 export interface Preference {
   language: Language;
+  source: Source;
   mode: Mode;
   radius: number;
   refetchInterval: number;
   setLanguage: (language: Language) => void;
+  setSource: (mapSource: Source) => void;
   setMode: (mode: Mode) => void;
   setRadius: (radius: number) => void;
   setRefetchInterval: (refetchInterval: number) => void;
@@ -27,10 +30,12 @@ const usePreferenceStore = create<Preference>()(
   persist(
     (set) => ({
       language: Language.ZH_HK,
+      source: Source.OpenStreetMap,
       mode: Mode.Map,
       radius: 100,
       refetchInterval: 1000 * 30,
       setLanguage: (language: Language) => set({ language }),
+      setSource: (source: Source) => set({ source }),
       setMode: (mode: Mode) => set({ mode }),
       setRadius: (radius: number) => set({ radius }),
       setRefetchInterval: (refetchInterval: number) => set({ refetchInterval }),

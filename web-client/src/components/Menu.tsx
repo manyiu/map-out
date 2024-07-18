@@ -40,13 +40,30 @@ const i18n = {
     sc: "设置值过低可能导致您的设备被服务器封禁",
     tc: "設置值過低可能導致您的設備被服務器封禁",
   },
+  openStreetMap: {
+    en: "OpenStreetMap",
+    sc: "OpenStreetMap",
+    tc: "OpenStreetMap",
+  },
+  landsDTopographicMap: {
+    en: "Lands Department Topographic Map",
+    sc: "地政总署地形图",
+    tc: "地政總署地形圖",
+  },
+  landsDImageryMap: {
+    en: "Lands Department Imagery Map",
+    sc: "地政总署影像地图",
+    tc: "地政總署影像地圖",
+  },
 };
 
 const Menu = () => {
   const { isOpen, onToggle } = useDisclosure();
   const language = usePreferenceStore((state) => state.language);
+  const source = usePreferenceStore((state) => state.source);
   const refetchInterval = usePreferenceStore((state) => state.refetchInterval);
   const setLanguage = usePreferenceStore((state) => state.setLanguage);
+  const setSource = usePreferenceStore((state) => state.setSource);
   const setRefetchInterval = usePreferenceStore(
     (state) => state.setRefetchInterval
   );
@@ -100,6 +117,22 @@ const Menu = () => {
                     {i18n.refetchIntervalHelper[language]}
                   </FormHelperText>
                 </FormControl>
+              </Box>
+              <Box>
+                <FormLabel>Map Source</FormLabel>
+                <RadioGroup onChange={setSource} value={source}>
+                  <Stack>
+                    <Radio value="OpenStreetMap">
+                      {i18n.openStreetMap[language]}
+                    </Radio>
+                    <Radio value="LandsDTopographicMap">
+                      {i18n.landsDTopographicMap[language]}
+                    </Radio>
+                    <Radio value="LandsDImageryMap">
+                      {i18n.landsDImageryMap[language]}
+                    </Radio>
+                  </Stack>
+                </RadioGroup>
               </Box>
             </Stack>
           </CardBody>

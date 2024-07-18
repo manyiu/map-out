@@ -11,12 +11,20 @@ export enum SourceUrl {
 }
 
 export enum SourceAttribution {
-  OpenStreetMap = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  LandsDTopographicMap = '<a href="https://api.portal.hkmapservice.gov.hk/disclaimer" target="_blank" class="copyrightDiv">&copy; Map infortmation from Lands Department</a><div style="width:28px;height:28px;display:inline-flex;background:url(https://api.hkmapservice.gov.hk/mapapi/landsdlogo.jpg);background-size:28px;"></div>',
-  LandsDImageryMap = 'Image ©2002 NASA/USGS|Image ©2016 NASA/USGS|Contains modified Copernicus Sentinel data [2022]|<a href="https://api.portal.hkmapservice.gov.hk/disclaimer" target="_blank" class="copyrightDiv">&copy;Map information from Lands Department</a><img style="height:28px;" src="https://api.hkmapservice.gov.hk/mapapi/landsdlogo.jpg"></img>',
-}
-
-export interface MapProps {
-  zoom: number;
-  source: Source;
+  OpenStreetMap = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  LandsDTopographicMap = `
+    <div style="display: flex;">
+      <a href="https://api.portal.hkmapservice.gov.hk/disclaimer" target="_blank" class="copyrightDiv">© Map infortmation from Lands Department</a>
+      <img crossorigin="anonymous" style="height:28px;" src="https://api.hkmapservice.gov.hk/mapapi/landsdlogo.jpg" />
+    </div>
+  `,
+  LandsDImageryMap = `
+    <div style="display: flex;">
+      <p>Image ©2002 NASA/USGS</p>
+      <p>Image ©2016 NASA/USGS</p>
+      <p>Contains modified Copernicus Sentinel data [2022]</p>
+      <a href="https://api.portal.hkmapservice.gov.hk/disclaimer" target="_blank" class="copyrightDiv">©Map information from Lands Department</a>
+      <img crossorigin="anonymous" style="height:28px;" src="https://api.hkmapservice.gov.hk/mapapi/landsdlogo.jpg" />
+    </div>
+  `,
 }
