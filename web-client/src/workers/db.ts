@@ -743,8 +743,39 @@ const main = async () => {
           type: "result::database::get::citybus::get-route-by-stop",
           data: routes,
         });
+
+        return;
       }
       //#endregion get citybus stop route
+
+      //#region get gmb route by id and seq
+      if (dataType === "database::get::gmb::get-route-by-id-seq") {
+        const routeIdSeq = event.data.data as { id: number; seq: number }[];
+
+        const sql = `
+          SELECT *
+          FROM RouteGmb
+          WHERE (${routeIdSeq
+            .map(
+              (route) => `route_id = ${route.id} AND route_seq = ${route.seq}`
+            )
+            .join(") OR (")})
+        `;
+
+        const routes = db.exec({
+          sql,
+          rowMode: "object",
+          returnValue: "resultRows",
+        });
+
+        self.postMessage({
+          type: "result::database::get::gmb::get-route-by-id-seq",
+          data: routes,
+        });
+
+        return;
+      }
+      //#endregion get gmb route by id and seq
 
       if (dataType === "ping") {
         self.postMessage({ type: "pong" });

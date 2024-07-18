@@ -18,8 +18,9 @@ import {
 } from "@chakra-ui/react";
 import useCitybusStopEta from "../../hooks/useCitybusStopEta";
 import { StopCitybus } from "../../repositories/types";
-import { Language, usePreferenceStore } from "../../stores/preference";
+import { usePreferenceStore } from "../../stores/preference";
 import Countdown from "../Countdown";
+import NoSchedule from "./NoSchedule";
 
 interface CitybusStopEtaProps {
   stop: StopCitybus | null;
@@ -29,17 +30,7 @@ interface CitybusStopEtaProps {
 }
 
 const CitybusStopEta = (props: CitybusStopEtaProps) => {
-  const language = usePreferenceStore((state) => {
-    switch (state.language) {
-      case Language.EN:
-        return "en";
-      case Language.ZH_CN:
-        return "sc";
-      case Language.ZH_HK:
-      default:
-        return "tc";
-    }
-  });
+  const language = usePreferenceStore((state) => state.language);
 
   const { data, isLoading, isError } = useCitybusStopEta(
     props.isOpen ? props.stop?.stop || null : null
@@ -98,11 +89,21 @@ const CitybusStopEta = (props: CitybusStopEtaProps) => {
     );
   }
 
+  if (data.length === 0) {
+    return (
+      <NoSchedule
+        header={props.stop?.[`name_${language}`]}
+        isOpen={props.isOpen}
+        onClose={props.onClose}
+      />
+    );
+  }
+
   return (
     <Modal isOpen={props.isOpen} onClose={props.onClose}>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>{props.stop?.name_tc}</ModalHeader>
+        <ModalHeader>{props.stop?.[`name_${language}`]}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           {data.map((eta) => (
@@ -113,7 +114,7 @@ const CitybusStopEta = (props: CitybusStopEtaProps) => {
                     <Badge variant="outline" colorScheme="red">
                       <Text fontSize="large">{eta.route}</Text>
                     </Badge>
-                    <Tag>{eta.dest_tc}</Tag>
+                    <Tag>{eta?.[`dest_${language}`]}</Tag>
                   </HStack>
                   <HStack>
                     {eta[`rmk_${language}`] && (

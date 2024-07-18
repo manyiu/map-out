@@ -2,9 +2,9 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 export enum Language {
-  EN = "en",
-  ZH_HK = "zh-HK",
-  ZH_CN = "zh-CN",
+  EN_US = "en",
+  ZH_HK = "tc",
+  ZH_CN = "sc",
 }
 
 export enum Mode {
@@ -17,6 +17,10 @@ export interface Preference {
   mode: Mode;
   radius: number;
   refetchInterval: number;
+  setLanguage: (language: Language) => void;
+  setMode: (mode: Mode) => void;
+  setRadius: (radius: number) => void;
+  setRefetchInterval: (refetchInterval: number) => void;
 }
 
 const usePreferenceStore = create<Preference>()(

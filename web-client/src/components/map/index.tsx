@@ -8,12 +8,13 @@ import {
 } from "@chakra-ui/react";
 import "leaflet/dist/leaflet.css";
 import { useState } from "react";
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import useGeolocation from "../../hooks/useGeolocation";
 import useNearByCitybus from "../../hooks/useNearByCitybus";
 import useNearByGmb from "../../hooks/useNearByGmb";
 import useNearByKmb from "../../hooks/useNearByKmb";
-import { StopCitybus, StopKmb } from "../../repositories/types";
+import { GmbStop, StopCitybus, StopKmb } from "../../repositories/types";
+import GmbStopEta from "../GmbStopEta";
 import CitybusStopEta from "./CitybusStopEta";
 import citybusIcon from "./icons/citybus";
 import gmbIcon from "./icons/gmb";
@@ -27,6 +28,7 @@ const Map = (props: MapProps) => {
   const [selectedKmbStop, setSelectedKmbStop] = useState<StopKmb | null>(null);
   const [selectedCitybusStop, setSelectedCitybusStop] =
     useState<StopCitybus | null>(null);
+  const [selectedGmbStop, setSelectedGmbStop] = useState<GmbStop | null>(null);
 
   const {
     isOpen: isKmbOpen,
@@ -38,6 +40,12 @@ const Map = (props: MapProps) => {
     isOpen: isCitybusOpen,
     onOpen: onCitybusOpen,
     onClose: onCitybusClose,
+  } = useDisclosure();
+
+  const {
+    isOpen: isGmbOpen,
+    onOpen: onGmbOpen,
+    onClose: onGmbClose,
   } = useDisclosure();
 
   const { geolocation } = useGeolocation();
@@ -77,6 +85,13 @@ const Map = (props: MapProps) => {
         isOpen={isCitybusOpen}
         onOpen={onCitybusOpen}
         onClose={onCitybusClose}
+      />
+
+      <GmbStopEta
+        stop={selectedGmbStop}
+        isOpen={isGmbOpen}
+        onOpen={onGmbOpen}
+        onClose={onGmbClose}
       />
 
       <MapContainer
@@ -123,11 +138,13 @@ const Map = (props: MapProps) => {
             key={stop.stop}
             position={[stop.lat, stop.long]}
             icon={gmbIcon}
-          >
-            <Popup>
-              <Text>{stop.stop}</Text>
-            </Popup>
-          </Marker>
+            eventHandlers={{
+              click: () => {
+                setSelectedGmbStop(stop);
+                onGmbOpen();
+              },
+            }}
+          ></Marker>
         ))}
       </MapContainer>
     </>
