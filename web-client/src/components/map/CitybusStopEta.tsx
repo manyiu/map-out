@@ -16,19 +16,19 @@ import {
   Tag,
   Text,
 } from "@chakra-ui/react";
-import useKmbStopEta from "../../hooks/useKmbStopEta";
-import { StopKmb } from "../../repositories/types";
+import useCitybusStopEta from "../../hooks/useCitybusStopEta";
+import { StopCitybus } from "../../repositories/types";
 import { Language, usePreferenceStore } from "../../stores/preference";
 import Countdown from "../Countdown";
 
-interface KmbStopEtaProps {
-  stop: StopKmb | null;
+interface CitybusStopEtaProps {
+  stop: StopCitybus | null;
   isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
 }
 
-const KmtStopEta = (props: KmbStopEtaProps) => {
+const CitybusStopEta = (props: CitybusStopEtaProps) => {
   const language = usePreferenceStore((state) => {
     switch (state.language) {
       case Language.EN:
@@ -41,7 +41,7 @@ const KmtStopEta = (props: KmbStopEtaProps) => {
     }
   });
 
-  const { data, isLoading, isError } = useKmbStopEta(
+  const { data, isLoading, isError } = useCitybusStopEta(
     props.isOpen ? props.stop?.stop || null : null
   );
 
@@ -98,23 +98,6 @@ const KmtStopEta = (props: KmbStopEtaProps) => {
     );
   }
 
-  if (data?.length === 0 || data?.filter((eta) => !!eta.eta).length === 0) {
-    return (
-      <Modal isOpen={props.isOpen} onClose={props.onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>{props.stop?.[`name_${language}`]}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Card>
-              <Text>No upcoming bus</Text>
-            </Card>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-    );
-  }
-
   return (
     <Modal isOpen={props.isOpen} onClose={props.onClose}>
       <ModalOverlay />
@@ -122,36 +105,31 @@ const KmtStopEta = (props: KmbStopEtaProps) => {
         <ModalHeader>{props.stop?.name_tc}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          {data
-            ?.filter((eta) => !!eta.eta)
-            .sort((a, b) => (a.eta! > b.eta! ? 1 : -1))
-            .map((eta) => (
-              <Card
-                key={`eta-${eta.co}-${eta.route}-${eta.service_type}-${eta.dir}-${eta.eta_seq}`}
-              >
-                <CardBody>
-                  <Stack>
-                    <HStack>
-                      <Badge variant="outline" colorScheme="red">
-                        <Text fontSize="large">{eta.route}</Text>
-                      </Badge>
-                      <Tag>{eta.dest_tc}</Tag>
-                    </HStack>
-                    <HStack>
-                      {eta[`rmk_${language}`] && (
-                        <Kbd>{eta[`rmk_${language}`]}</Kbd>
-                      )}
-                      <TimeIcon />
-                      <Countdown eta={eta.eta!} />
-                    </HStack>
-                  </Stack>
-                </CardBody>
-              </Card>
-            ))}
+          {data.map((eta) => (
+            <Card key={`eta-${eta.co}-${eta.route}-${eta.dir}-${eta.eta_seq}`}>
+              <CardBody>
+                <Stack>
+                  <HStack>
+                    <Badge variant="outline" colorScheme="red">
+                      <Text fontSize="large">{eta.route}</Text>
+                    </Badge>
+                    <Tag>{eta.dest_tc}</Tag>
+                  </HStack>
+                  <HStack>
+                    {eta[`rmk_${language}`] && (
+                      <Kbd>{eta[`rmk_${language}`]}</Kbd>
+                    )}
+                    <TimeIcon />
+                    <Countdown eta={eta.eta!} />
+                  </HStack>
+                </Stack>
+              </CardBody>
+            </Card>
+          ))}
         </ModalBody>
       </ModalContent>
     </Modal>
   );
 };
 
-export default KmtStopEta;
+export default CitybusStopEta;

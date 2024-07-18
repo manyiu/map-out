@@ -6,6 +6,10 @@ interface CountdownProps {
 }
 
 const formatTime = (time: number) => {
+  if (isNaN(time)) {
+    return "Loading...";
+  }
+
   if (time <= 0) {
     return "-";
   }
@@ -20,20 +24,28 @@ const formatTime = (time: number) => {
 };
 
 const Countdown = (props: CountdownProps) => {
-  const [countdown, setCountdown] = useState(0);
+  const [countdown, setCountdown] = useState(NaN);
 
   useEffect(() => {
-    const intervalId = setInterval(() => {
+    const timeoutId = setTimeout(() => {
       const diff = new Date(props.eta).getTime() - new Date().getTime();
 
       setCountdown(diff);
+    }, 0);
+
+    const intervalId = setInterval(() => {
+      const diff = new Date(props.eta).getTime() - new Date().getTime();
 
       if (diff <= 0) {
         clearInterval(intervalId);
       }
+
+      clearTimeout(timeoutId);
+      setCountdown(diff);
     }, 1000);
 
     return () => {
+      clearTimeout(timeoutId);
       clearInterval(intervalId);
     };
   }, [props.eta]);

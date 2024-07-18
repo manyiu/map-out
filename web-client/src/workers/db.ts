@@ -722,6 +722,30 @@ const main = async () => {
       }
       //#endregion get nearby stops
 
+      //#region get citybus stop route
+      if (dataType === "database::get::citybus::get-route-by-stop") {
+        const stopId = event.data.data as string;
+
+        const sql = `
+          SELECT DISTINCT RouteCitybus.*
+          FROM RouteCitybus
+          JOIN RouteStopCitybus ON RouteCitybus.route = RouteStopCitybus.route
+          WHERE RouteStopCitybus.stop = '${stopId}'
+        `;
+
+        const routes = db.exec({
+          sql,
+          rowMode: "object",
+          returnValue: "resultRows",
+        });
+
+        self.postMessage({
+          type: "result::database::get::citybus::get-route-by-stop",
+          data: routes,
+        });
+      }
+      //#endregion get citybus stop route
+
       if (dataType === "ping") {
         self.postMessage({ type: "pong" });
 

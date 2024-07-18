@@ -269,3 +269,20 @@ export interface KmbStopEta {
   rmk_en: string;
   data_timestamp: string;
 }
+
+export interface CitybusStopRouteEta {
+  co: string;
+  route: string;
+  dir: string;
+  seq: number;
+  stop: string;
+  dest_tc: string;
+  dest_en: string;
+  eta: string;
+  rmk_tc: string;
+  eta_seq: number;
+  dest_sc: string;
+  rmk_en: string;
+  rmk_sc: string;
+  data_timestamp: string;
+}

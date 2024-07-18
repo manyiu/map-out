@@ -13,8 +13,8 @@ import useGeolocation from "../../hooks/useGeolocation";
 import useNearByCitybus from "../../hooks/useNearByCitybus";
 import useNearByGmb from "../../hooks/useNearByGmb";
 import useNearByKmb from "../../hooks/useNearByKmb";
-import { StopKmb } from "../../repositories/types";
-import { Language, usePreferenceStore } from "../../stores/preference";
+import { StopCitybus, StopKmb } from "../../repositories/types";
+import CitybusStopEta from "./CitybusStopEta";
 import citybusIcon from "./icons/citybus";
 import gmbIcon from "./icons/gmb";
 import kmbIcon from "./icons/kmb";
@@ -25,8 +25,8 @@ import { MapProps, SourceAttribution, SourceUrl } from "./types";
 const Map = (props: MapProps) => {
   const [ready, setReady] = useState(false);
   const [selectedKmbStop, setSelectedKmbStop] = useState<StopKmb | null>(null);
-  // const [selectedCitybusStop, setSelectedCitybusStop] =
-  //   useState<StopCitybus | null>(null);
+  const [selectedCitybusStop, setSelectedCitybusStop] =
+    useState<StopCitybus | null>(null);
 
   const {
     isOpen: isKmbOpen,
@@ -34,16 +34,15 @@ const Map = (props: MapProps) => {
     onClose: onKmbClose,
   } = useDisclosure();
 
-  // const {
-  //   isOpen: isCitybusOpen,
-  //   onOpen: onCitybusOpen,
-  //   onClose: onCitybusClose,
-  // } = useDisclosure();
+  const {
+    isOpen: isCitybusOpen,
+    onOpen: onCitybusOpen,
+    onClose: onCitybusClose,
+  } = useDisclosure();
 
   const { geolocation } = useGeolocation();
   const { stop: stopKmb } = useNearByKmb();
   const { stop: stopCitybus } = useNearByCitybus();
-  const language = usePreferenceStore((state) => state.language);
   const { stop: stopGmb } = useNearByGmb();
 
   if (!geolocation) {
@@ -71,6 +70,13 @@ const Map = (props: MapProps) => {
         isOpen={isKmbOpen}
         onOpen={onKmbOpen}
         onClose={onKmbClose}
+      />
+
+      <CitybusStopEta
+        stop={selectedCitybusStop}
+        isOpen={isCitybusOpen}
+        onOpen={onCitybusOpen}
+        onClose={onCitybusClose}
       />
 
       <MapContainer
@@ -104,22 +110,24 @@ const Map = (props: MapProps) => {
             key={stop.stop}
             position={[stop.lat, stop.long]}
             icon={citybusIcon}
-          >
-            <Popup>
-              {language === Language.ZH_HK
-                ? stop.name_tc
-                : language === Language.ZH_CN
-                ? stop.name_sc
-                : stop.name_en}
-            </Popup>
-          </Marker>
+            eventHandlers={{
+              click: () => {
+                setSelectedCitybusStop(stop);
+                onCitybusOpen();
+              },
+            }}
+          ></Marker>
         ))}
         {stopGmb.map((stop) => (
           <Marker
             key={stop.stop}
             position={[stop.lat, stop.long]}
             icon={gmbIcon}
-          ></Marker>
+          >
+            <Popup>
+              <Text>{stop.stop}</Text>
+            </Popup>
+          </Marker>
         ))}
       </MapContainer>
     </>
