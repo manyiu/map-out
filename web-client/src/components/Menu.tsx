@@ -40,6 +40,11 @@ const i18n = {
     sc: "设置值过低可能导致您的设备被服务器封禁",
     tc: "設置值過低可能導致您的設備被服務器封禁",
   },
+  mapSource: {
+    en: "Map Source",
+    sc: "地图来源",
+    tc: "地圖來源",
+  },
   openStreetMap: {
     en: "OpenStreetMap",
     sc: "OpenStreetMap",
@@ -119,7 +124,7 @@ const Menu = () => {
                 </FormControl>
               </Box>
               <Box>
-                <FormLabel>Map Source</FormLabel>
+                <FormLabel>{i18n.mapSource[language]}</FormLabel>
                 <RadioGroup onChange={setSource} value={source}>
                   <Stack>
                     <Radio value="OpenStreetMap">
