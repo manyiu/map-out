@@ -59,7 +59,7 @@ const KmtStopEta = (props: KmbStopEtaProps) => {
             <Stack>
               <Skeleton>
                 <HStack>
-                  <Badge variant="outline" colorScheme="red">
+                  <Badge>
                     <Text fontSize="large"></Text>
                   </Badge>
                   <Tag></Tag>

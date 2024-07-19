@@ -9,6 +9,7 @@ import {
   FormControl,
   FormHelperText,
   FormLabel,
+  HStack,
   NumberDecrementStepper,
   NumberIncrementStepper,
   NumberInput,
@@ -19,12 +20,29 @@ import {
   Slide,
   Stack,
   StackDivider,
+  Switch,
   Text,
+  useColorMode,
   useDisclosure,
 } from "@chakra-ui/react";
 import { usePreferenceStore } from "../stores/preference";
 
 const i18n = {
+  colorMode: {
+    en: "Color Mode",
+    sc: "颜色模式",
+    tc: "色調亮度",
+  },
+  light: {
+    en: "Light",
+    sc: "明亮",
+    tc: "淺色",
+  },
+  dark: {
+    en: "Dark",
+    sc: "黑暗",
+    tc: "深色",
+  },
   language: {
     en: "Language",
     sc: "语言",
@@ -63,7 +81,7 @@ const i18n = {
 };
 
 const Menu = () => {
-  const { isOpen, onToggle } = useDisclosure();
+  const { isOpen, onToggle, onClose } = useDisclosure();
   const language = usePreferenceStore((state) => state.language);
   const source = usePreferenceStore((state) => state.source);
   const refetchInterval = usePreferenceStore((state) => state.refetchInterval);
@@ -72,6 +90,7 @@ const Menu = () => {
   const setRefetchInterval = usePreferenceStore(
     (state) => state.setRefetchInterval
   );
+  const { colorMode, toggleColorMode } = useColorMode();
 
   return (
     <>
@@ -80,6 +99,16 @@ const Menu = () => {
         in={isOpen}
         style={{
           zIndex: 1001,
+          backgroundColor: "rgba(0, 0, 0, 0.3)",
+          cursor: "pointer",
+        }}
+        onClick={onClose}
+      />
+      <Slide
+        direction="left"
+        in={isOpen}
+        style={{
+          zIndex: 1002,
           width: "50dvw",
           maxWidth: "400px",
           minWidth: "300px",
@@ -92,11 +121,23 @@ const Menu = () => {
           <CardBody>
             <Stack divider={<StackDivider />} spacing={4}>
               <Box>
+                <FormLabel>{i18n.colorMode[language]}</FormLabel>
+                <HStack spacing={3}>
+                  <FormLabel mb={0}>{i18n.dark[language]}</FormLabel>
+                  <Switch
+                    id="colorMode"
+                    isChecked={colorMode === "light"}
+                    onChange={toggleColorMode}
+                  />
+                  <FormLabel mb={0}>{i18n.light[language]}</FormLabel>
+                </HStack>
+              </Box>
+              <Box>
                 <FormLabel>{i18n.language[language]}</FormLabel>
                 <RadioGroup onChange={setLanguage} value={language}>
                   <Stack direction="row">
                     <Radio value="en">English</Radio>
-                    <Radio value="tc">繁體中文</Radio>
+                    <Radio value="tc">正體中文</Radio>
                     <Radio value="sc">简体中文</Radio>
                   </Stack>
                 </RadioGroup>

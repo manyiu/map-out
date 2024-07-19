@@ -59,7 +59,7 @@ const CitybusStopEta = (props: CitybusStopEtaProps) => {
             <Stack>
               <Skeleton>
                 <HStack>
-                  <Badge variant="outline" colorScheme="red">
+                  <Badge>
                     <Text fontSize="large"></Text>
                   </Badge>
                   <Tag></Tag>
@@ -111,7 +111,7 @@ const CitybusStopEta = (props: CitybusStopEtaProps) => {
               <CardBody>
                 <Stack>
                   <HStack>
-                    <Badge variant="outline" colorScheme="red">
+                    <Badge variant="outline" colorScheme="yellow">
                       <Text fontSize="large">{eta.route}</Text>
                     </Badge>
                     <Tag>{eta?.[`dest_${language}`]}</Tag>
