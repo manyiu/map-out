@@ -22,7 +22,7 @@ import gmbIcon from "./icons/gmb";
 import kmbIcon from "./icons/kmb";
 import KmbStopEta from "./KmbStopEta";
 import Spy from "./Spy";
-import { SourceAttribution, SourceUrl } from "./types";
+import { Source, SourceAttribution, SourceUrl } from "./types";
 
 const i18n = {
   loading: {
@@ -121,6 +121,13 @@ const Map = () => {
           url={SourceUrl[source]}
           crossOrigin={"anonymous"}
         />
+        {(source === Source.LandsDTopographicMap ||
+          source === Source.LandsDImageryMap) && (
+          <TileLayer
+            url={SourceUrl.LandsDMapLabel.replace("[language]", language)}
+            crossOrigin={"anonymous"}
+          />
+        )}
         {stopKmb.map((stop) => (
           <Marker
             key={stop.stop}

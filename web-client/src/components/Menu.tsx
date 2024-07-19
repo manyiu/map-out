@@ -114,7 +114,7 @@ const Menu = () => {
           minWidth: "300px",
         }}
       >
-        <Card height="100dvh">
+        <Card height="100dvh" overflowY="scroll">
           <CardHeader>
             <Text fontSize="2xl">Map Out</Text>
           </CardHeader>

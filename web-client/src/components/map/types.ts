@@ -8,6 +8,7 @@ export enum SourceUrl {
   OpenStreetMap = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   LandsDTopographicMap = "https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/WGS84/{z}/{x}/{y}.png",
   LandsDImageryMap = "https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/imagery/WGS84/{z}/{x}/{y}.png",
+  LandsDMapLabel = "https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/[language]/WGS84/{z}/{x}/{y}.png",
 }
 
 export enum SourceAttribution {
