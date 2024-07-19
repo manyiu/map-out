@@ -20,7 +20,7 @@ interface NoScheduleProps {
   onClose: () => void;
 }
 
-const text = {
+const i18n = {
   noBus: {
     en: "Not In Service",
     sc: "暂无班次",
@@ -46,7 +46,7 @@ const NoSchedule = (props: NoScheduleProps) => {
             </CardHeader>
             <CardBody>
               <Center>
-                <Text>{text.noBus[language]}</Text>
+                <Text>{i18n.noBus[language]}</Text>
               </Center>
             </CardBody>
           </Card>

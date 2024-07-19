@@ -1,13 +1,22 @@
 import { Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
+import { Language, usePreferenceStore } from "../stores/preference";
 
 interface CountdownProps {
   eta: string;
 }
 
-const formatTime = (time: number) => {
+const i18n = {
+  calculating: {
+    en: "Calculating...",
+    sc: "计算中...",
+    tc: "計算中...",
+  },
+};
+
+const formatTime = (time: number, language: Language) => {
   if (isNaN(time)) {
-    return "Loading...";
+    return i18n.calculating[language];
   }
 
   if (time <= 0) {
@@ -25,6 +34,7 @@ const formatTime = (time: number) => {
 
 const Countdown = (props: CountdownProps) => {
   const [countdown, setCountdown] = useState(NaN);
+  const language = usePreferenceStore((state) => state.language);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -50,7 +60,7 @@ const Countdown = (props: CountdownProps) => {
     };
   }, [props.eta]);
 
-  return <Text>{formatTime(countdown)}</Text>;
+  return <Text>{formatTime(countdown, language)}</Text>;
 };
 
 export default Countdown;
