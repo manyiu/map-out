@@ -1,4 +1,4 @@
-import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { ChevronLeftIcon, SettingsIcon } from "@chakra-ui/icons";
 import {
   Box,
   Button,
@@ -6,6 +6,7 @@ import {
   CardBody,
   CardFooter,
   CardHeader,
+  Center,
   FormControl,
   FormHelperText,
   FormLabel,
@@ -26,6 +27,7 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { usePreferenceStore } from "../stores/preference";
+import { dbWorker } from "../workers";
 
 const i18n = {
   colorMode: {
@@ -53,7 +55,7 @@ const i18n = {
     sc: "刷新间隔（秒）",
     tc: "刷新間隔（秒）",
   },
-  refetchIntervalHelper: {
+  refetchIntervalHelperText: {
     en: "Setting the value too low may cause your device to be banned from the server",
     sc: "设置值过低可能导致您的设备被服务器封禁",
     tc: "設置值過低可能導致您的設備被服務器封禁",
@@ -78,6 +80,16 @@ const i18n = {
     sc: "地政总署影像地图",
     tc: "地政總署影像地圖",
   },
+  databaseReset: {
+    en: "Reset Database",
+    sc: "重置数据库",
+    tc: "重置數據庫",
+  },
+  databaseResetHelperText: {
+    en: "If your app is not working properly, or the data is looking weird, you can try to reset the database and refetch the data.",
+    sc: "如果您的应用程序无法正常工作，或数据看起来很奇怪，您可以尝试重置数据库并重新获取数据。",
+    tc: "如果您的應用程序無法正常工作，或數據看起來很奇怪，您可以嘗試重置數據庫並重新獲取數據。",
+  },
 };
 
 const Menu = () => {
@@ -91,6 +103,11 @@ const Menu = () => {
     (state) => state.setRefetchInterval
   );
   const { colorMode, toggleColorMode } = useColorMode();
+  const resetHandler = () => {
+    dbWorker.postMessage({
+      type: "database::reset",
+    });
+  };
 
   return (
     <>
@@ -160,7 +177,7 @@ const Menu = () => {
                     </NumberInputStepper>
                   </NumberInput>
                   <FormHelperText>
-                    {i18n.refetchIntervalHelper[language]}
+                    {i18n.refetchIntervalHelperText[language]}
                   </FormHelperText>
                 </FormControl>
               </Box>
@@ -180,6 +197,18 @@ const Menu = () => {
                   </Stack>
                 </RadioGroup>
               </Box>
+              <Box>
+                <FormControl>
+                  <Center>
+                    <Button onClick={resetHandler} colorScheme="red">
+                      {i18n.databaseReset[language]}
+                    </Button>
+                  </Center>
+                  <FormHelperText>
+                    {i18n.databaseResetHelperText[language]}
+                  </FormHelperText>
+                </FormControl>
+              </Box>
             </Stack>
           </CardBody>
           <CardFooter>
@@ -197,7 +226,7 @@ const Menu = () => {
             {isOpen ? (
               <ChevronLeftIcon boxSize={5} />
             ) : (
-              <ChevronRightIcon boxSize={5} />
+              <SettingsIcon boxSize={5} />
             )}
           </Button>
         </Card>

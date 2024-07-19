@@ -1,9 +1,26 @@
+import { useToast } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
+import { usePreferenceStore } from "../stores/preference";
 import { dbWorker, fetchWorker } from "../workers";
+
+const i18n = {
+  databaseResetTitle: {
+    en: "Database Seccessfully Reset",
+    sc: "数据库已成功重置",
+    tc: "數據庫已成功重置",
+  },
+  databaseResetDescription: {
+    en: "Data will be refetched in the background",
+    sc: "数据将在后台重新获取",
+    tc: "數據將在後台重新獲取",
+  },
+};
 
 const useDatabase = () => {
   const [up, setUp] = useState(false);
   const [ready, setReady] = useState(false);
+  const language = usePreferenceStore((state) => state.language);
+  const toast = useToast();
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -41,6 +58,20 @@ const useDatabase = () => {
         } else {
           setReady(true);
         }
+      }
+
+      if (event.data.type === "done::database::reset") {
+        fetchWorker.postMessage({
+          type: "fetch::update",
+        });
+
+        toast({
+          title: i18n.databaseResetTitle[language],
+          description: i18n.databaseResetDescription[language],
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+        });
       }
     };
 

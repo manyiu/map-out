@@ -12,7 +12,7 @@ export enum SourceUrl {
 }
 
 export enum SourceAttribution {
-  OpenStreetMap = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  OpenStreetMap = '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
   LandsDTopographicMap = `
     <div style="display: flex;">
       <a href="https://api.portal.hkmapservice.gov.hk/disclaimer" target="_blank" class="copyrightDiv">© Map infortmation from Lands Department</a>

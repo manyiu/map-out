@@ -15,189 +15,189 @@ const main = async () => {
 
   const db = new sqlite3.oo1.OpfsDb("/map-out.sqlite3");
 
-  // db.exec("DROP TABLE IF EXISTS RouteGmb");
-  // db.exec("DROP TABLE IF EXISTS RouteHeadwayGmb");
-  // db.exec("DROP TABLE IF EXISTS RouteStopGmb");
-  // db.exec("DROP TABLE IF EXISTS StopGmb");
+  const createDatabase = () => {
+    //#region Create RouteKmb table
+    const createRouteKmbSql = `
+      CREATE TABLE IF NOT EXISTS RouteKmb (
+        bound CHAR(1) NOT NULL,
+        dest_en TEXT NOT NULL,
+        dest_sc TEXT NOT NULL,
+        dest_tc TEXT NOT NULL,
+        orig_en TEXT NOT NULL,
+        orig_sc TEXT NOT NULL,
+        orig_tc TEXT NOT NULL,
+        route TEXT NOT NULL,
+        service_type INTEGER NOT NULL,
+        PRIMARY KEY (route, bound, service_type)
+      )
+    `;
 
-  //#region Create RouteKmb table
-  const createRouteKmbSql = `
-  CREATE TABLE IF NOT EXISTS RouteKmb (
-    bound CHAR(1) NOT NULL,
-    dest_en TEXT NOT NULL,
-    dest_sc TEXT NOT NULL,
-    dest_tc TEXT NOT NULL,
-    orig_en TEXT NOT NULL,
-    orig_sc TEXT NOT NULL,
-    orig_tc TEXT NOT NULL,
-    route TEXT NOT NULL,
-    service_type INTEGER NOT NULL,
-    PRIMARY KEY (route, bound, service_type)
-  )
-`;
+    db.exec(createRouteKmbSql);
+    //#endregion Create RouteKmb table
 
-  db.exec(createRouteKmbSql);
-  //#endregion Create RouteKmb table
+    //#region Create StopKmb table
+    const createStopKmbSql = `
+      CREATE TABLE IF NOT EXISTS StopKmb (
+        lat REAL NOT NULL,
+        long REAL NOT NULL,
+        name_en TEXT NOT NULL,
+        name_sc TEXT NOT NULL,
+        name_tc TEXT NOT NULL,
+        stop TEXT PRIMARY KEY NOT NULL
+      )
+    `;
 
-  //#region Create StopKmb table
-  const createStopKmbSql = `
-    CREATE TABLE IF NOT EXISTS StopKmb (
-      lat REAL NOT NULL,
-      long REAL NOT NULL,
-      name_en TEXT NOT NULL,
-      name_sc TEXT NOT NULL,
-      name_tc TEXT NOT NULL,
-      stop TEXT PRIMARY KEY NOT NULL
-    )
-  `;
+    db.exec(createStopKmbSql);
 
-  db.exec(createStopKmbSql);
+    const createStopKmbIndexSql = `
+      CREATE INDEX IF NOT EXISTS StopKmb_lat_long
+      ON StopKmb (lat, long)
+    `;
 
-  const createStopKmbIndexSql = `
-    CREATE INDEX IF NOT EXISTS StopKmb_lat_long
-    ON StopKmb (lat, long)
-  `;
+    db.exec(createStopKmbIndexSql);
+    //#endregion Create StopKmb table
 
-  db.exec(createStopKmbIndexSql);
-  //#endregion Create StopKmb table
+    //#region Create RouteStopKmb table
+    const createRouteStopKmbSql = `
+      CREATE TABLE IF NOT EXISTS RouteStopKmb (
+        bound CHAR(1) NOT NULL,
+        route TEXT NOT NULL,
+        seq INTEGER NOT NULL,
+        service_type INTEGER NOT NULL,
+        stop TEXT NOT NULL,
+        PRIMARY KEY (route, stop, service_type, seq)
+      )
+    `;
 
-  //#region Create RouteStopKmb table
-  const createRouteStopKmbSql = `
-    CREATE TABLE IF NOT EXISTS RouteStopKmb (
-      bound CHAR(1) NOT NULL,
-      route TEXT NOT NULL,
-      seq INTEGER NOT NULL,
-      service_type INTEGER NOT NULL,
-      stop TEXT NOT NULL,
-      PRIMARY KEY (route, stop, service_type, seq)
-    )
-  `;
-  db.exec(createRouteStopKmbSql);
-  //#endregion Create RouteStopKmb table
+    db.exec(createRouteStopKmbSql);
+    //#endregion Create RouteStopKmb table
 
-  //#region Create RouteCitybus table
-  const createRouteCitybusSql = `
-  CREATE TABLE IF NOT EXISTS RouteCitybus (
-    co TEXT NOT NULL,
-    data_timestamp DATETIME NOT NULL,
-    dest_en TEXT NOT NULL,
-    dest_sc TEXT NOT NULL,
-    dest_tc TEXT NOT NULL,
-    orig_en TEXT NOT NULL,
-    orig_sc TEXT NOT NULL,
-    orig_tc TEXT NOT NULL,
-    route TEXT PRIMARY KEY NOT NULL
-  )
-`;
+    //#region Create RouteCitybus table
+    const createRouteCitybusSql = `
+      CREATE TABLE IF NOT EXISTS RouteCitybus (
+        co TEXT NOT NULL,
+        data_timestamp DATETIME NOT NULL,
+        dest_en TEXT NOT NULL,
+        dest_sc TEXT NOT NULL,
+        dest_tc TEXT NOT NULL,
+        orig_en TEXT NOT NULL,
+        orig_sc TEXT NOT NULL,
+        orig_tc TEXT NOT NULL,
+        route TEXT PRIMARY KEY NOT NULL
+      )
+    `;
 
-  db.exec(createRouteCitybusSql);
-  //#endregion Create RouteCitybus table
+    db.exec(createRouteCitybusSql);
+    //#endregion Create RouteCitybus table
 
-  //#region Create StopCitybus table
-  const createStopCitybusSql = `
-    CREATE TABLE IF NOT EXISTS StopCitybus (
-      data_timestamp DATETIME NOT NULL,
-      lat REAL NOT NULL,
-      long REAL NOT NULL,
-      name_en TEXT NOT NULL,
-      name_sc TEXT NOT NULL,
-      name_tc TEXT NOT NULL,
-      stop TEXT PRIMARY KEY NOT NULL
-    )
-  `;
+    //#region Create StopCitybus table
+    const createStopCitybusSql = `
+      CREATE TABLE IF NOT EXISTS StopCitybus (
+        data_timestamp DATETIME NOT NULL,
+        lat REAL NOT NULL,
+        long REAL NOT NULL,
+        name_en TEXT NOT NULL,
+        name_sc TEXT NOT NULL,
+        name_tc TEXT NOT NULL,
+        stop TEXT PRIMARY KEY NOT NULL
+      )
+    `;
 
-  db.exec(createStopCitybusSql);
+    db.exec(createStopCitybusSql);
 
-  const createStopCitybusIndexSql = `
-    CREATE INDEX IF NOT EXISTS StopCitybus_lat_long
-    ON StopCitybus (lat, long)
-  `;
+    const createStopCitybusIndexSql = `
+      CREATE INDEX IF NOT EXISTS StopCitybus_lat_long
+      ON StopCitybus (lat, long)
+    `;
 
-  db.exec(createStopCitybusIndexSql);
-  //#endregion Create StopCitybus table
+    db.exec(createStopCitybusIndexSql);
+    //#endregion Create StopCitybus table
 
-  //#region Create RouteStopCitybus table
-  const createRouteStopCitybusSql = `
-    CREATE TABLE IF NOT EXISTS RouteStopCitybus (
-      co TEXT NOT NULL,
-      data_timestamp TEXT NOT NULL,
-      dir CHAR(1) NOT NULL,
-      route TEXT NOT NULL,
-      seq INTEGER NOT NULL,
-      stop TEXT NOT NULL,
-      PRIMARY KEY (route, stop, seq)
-    )
-  `;
+    //#region Create RouteStopCitybus table
+    const createRouteStopCitybusSql = `
+      CREATE TABLE IF NOT EXISTS RouteStopCitybus (
+        co TEXT NOT NULL,
+        data_timestamp TEXT NOT NULL,
+        dir CHAR(1) NOT NULL,
+        route TEXT NOT NULL,
+        seq INTEGER NOT NULL,
+        stop TEXT NOT NULL,
+        PRIMARY KEY (route, stop, seq)
+      )
+    `;
 
-  db.exec(createRouteStopCitybusSql);
-  //#endregion Create RouteStopCitybus table
+    db.exec(createRouteStopCitybusSql);
+    //#endregion Create RouteStopCitybus table
 
-  //#region Create GMB Route related tables
-  const createRouteGmbSql = `
-  CREATE TABLE IF NOT EXISTS RouteGmb (
-    route_id INTEGER NOT NULL,
-    route_seq INTEGER NOT NULL,
-    region TEXT NOT NULL,
-    route_code TEXT NOT NULL,
-    orig_tc TEXT NOT NULL,
-    orig_sc TEXT NOT NULL,
-    orig_en TEXT NOT NULL,
-    dest_tc TEXT NOT NULL,
-    dest_sc TEXT NOT NULL,
-    dest_en TEXT NOT NULL,
-    remarks_tc TEXT,
-    remarks_sc TEXT,
-    remarks_en TEXT,
-    description_tc TEXT NOT NULL,
-    description_sc TEXT NOT NULL,
-    description_en TEXT NOT NULL,
-    PRIMARY KEY (route_id, route_seq)
-  )
-`;
+    //#region Create GMB Route related tables
+    const createRouteGmbSql = `
+      CREATE TABLE IF NOT EXISTS RouteGmb (
+        route_id INTEGER NOT NULL,
+        route_seq INTEGER NOT NULL,
+        region TEXT NOT NULL,
+        route_code TEXT NOT NULL,
+        orig_tc TEXT NOT NULL,
+        orig_sc TEXT NOT NULL,
+        orig_en TEXT NOT NULL,
+        dest_tc TEXT NOT NULL,
+        dest_sc TEXT NOT NULL,
+        dest_en TEXT NOT NULL,
+        remarks_tc TEXT,
+        remarks_sc TEXT,
+        remarks_en TEXT,
+        description_tc TEXT NOT NULL,
+        description_sc TEXT NOT NULL,
+        description_en TEXT NOT NULL,
+        PRIMARY KEY (route_id, route_seq)
+      )
+    `;
 
-  db.exec(createRouteGmbSql);
-  //#endregion Create GMB Route related tables
+    db.exec(createRouteGmbSql);
+    //#endregion Create GMB Route related tables
 
-  //#region Create RouteStopGmb table
-  const createRouteStopGmbSql = `
-  CREATE TABLE IF NOT EXISTS RouteStopGmb (
-    route_id INTEGER NOT NULL,
-    route_seq INTEGER NOT NULL,
-    route_code TEXT NOT NULL,
-    stop_seq INTEGER NOT NULL,
-    stop_id INTEGER NOT NULL,
-    name_tc TEXT NOT NULL,
-    name_sc TEXT NOT NULL,
-    name_en TEXT NOT NULL,
-    PRIMARY KEY (route_id, route_seq, stop_seq)
-  )
-`;
+    //#region Create RouteStopGmb table
+    const createRouteStopGmbSql = `
+      CREATE TABLE IF NOT EXISTS RouteStopGmb (
+        route_id INTEGER NOT NULL,
+        route_seq INTEGER NOT NULL,
+        route_code TEXT NOT NULL,
+        stop_seq INTEGER NOT NULL,
+        stop_id INTEGER NOT NULL,
+        name_tc TEXT NOT NULL,
+        name_sc TEXT NOT NULL,
+        name_en TEXT NOT NULL,
+        PRIMARY KEY (route_id, route_seq, stop_seq)
+      )
+    `;
 
-  db.exec(createRouteStopGmbSql);
-  //#endregion Create RouteStopGmb table
+    db.exec(createRouteStopGmbSql);
+    //#endregion Create RouteStopGmb table
 
-  //#region Create GMB Stop table
-  const createStopGmbSql = `
-  CREATE TABLE IF NOT EXISTS StopGmb (
-    stop INTEGER PRIMARY KEY NOT NULL,
-    lat REAL NOT NULL,
-    long REAL NOT NULL,
-    enabled INTEGER NOT NULL,
-    remarks_tc TEXT,
-    remarks_sc TEXT,
-    remarks_en TEXT
-  )
-`;
+    //#region Create GMB Stop table
+    const createStopGmbSql = `
+      CREATE TABLE IF NOT EXISTS StopGmb (
+        stop INTEGER PRIMARY KEY NOT NULL,
+        lat REAL NOT NULL,
+        long REAL NOT NULL,
+        enabled INTEGER NOT NULL,
+        remarks_tc TEXT,
+        remarks_sc TEXT,
+        remarks_en TEXT
+      )
+    `;
 
-  db.exec(createStopGmbSql);
+    db.exec(createStopGmbSql);
 
-  const createStopGmbIndexSql = `
-  CREATE INDEX IF NOT EXISTS StopGmb_coordinates
-  ON StopGmb (lat, long)
-`;
+    const createStopGmbIndexSql = `
+      CREATE INDEX IF NOT EXISTS StopGmb_coordinates
+      ON StopGmb (lat, long)
+    `;
 
-  db.exec(createStopGmbIndexSql);
-  //#endregion Create GMB Stop table
+    db.exec(createStopGmbIndexSql);
+    //#endregion Create GMB Stop table
+  };
+
+  createDatabase();
 
   self.addEventListener(
     "message",
@@ -849,6 +849,22 @@ const main = async () => {
           type: "result::database::check-empty",
           data: hasZero,
         });
+      }
+
+      if (dataType === "database::reset") {
+        db.exec("DROP TABLE IF EXISTS RouteKmb");
+        db.exec("DROP TABLE IF EXISTS RouteCitybus");
+        db.exec("DROP TABLE IF EXISTS RouteGmb");
+        db.exec("DROP TABLE IF EXISTS StopKmb");
+        db.exec("DROP TABLE IF EXISTS StopCitybus");
+        db.exec("DROP TABLE IF EXISTS StopGmb");
+        db.exec("DROP TABLE IF EXISTS RouteStopKmb");
+        db.exec("DROP TABLE IF EXISTS RouteStopCitybus");
+        db.exec("DROP TABLE IF EXISTS RouteStopGmb");
+
+        createDatabase();
+
+        self.postMessage({ type: "done::database::reset" });
       }
     }
   );
