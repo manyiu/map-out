@@ -72,21 +72,21 @@ jobs:
       - name: Setup AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: $CDK_ROLE_TO_ASSUME
-          aws-region: $CDK_DEFAULT_REGION
+          role-to-assume: ${{ env.CDK_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.CDK_DEFAULT_REGION }}
       - name: Create Frontend Distribution Folder
         run: mkdir -p web-client/dist
       - name: Install frontend dependencies
         working-directory: web-client
         run: npm install
       - name: Synthesize the backend stack
-        run: npm run cdk synth MapOutBackendStack-$GITHUB_REF_NAME
+        run: npm run cdk synth MapOutBackendStack-${{ env.GITHUB_REF_NAME }}
       - name: Deploy the backend stack
-        run: npm run cdk deploy --require-approval never --no-rollback --outputs-file ./web-client/src/amplify/cdk-output.json MapOutBackendStack-$GITHUB_REF_NAME
+        run: npm run cdk deploy --require-approval never --no-rollback --outputs-file ./web-client/src/amplify/cdk-output.json MapOutBackendStack-${{ env.GITHUB_REF_NAME }}
       - name: Build the frontend
         working-directory: web-client
         run: npm run build
       - name: Synthesize the frontend stack
-        run: npm run cdk synth MapOutWebClientStack-$GITHUB_REF_NAME
+        run: npm run cdk synth MapOutWebClientStack-${{ env.GITHUB_REF_NAME }}
       - name: Deploy the frontend stack
-        run: npm run cdk deploy --require-approval never MapOutWebClientStack-$GITHUB_REF_NAME
+        run: npm run cdk deploy --require-approval never MapOutWebClientStack-${{ env.GITHUB_REF_NAME }}
