@@ -111,7 +111,7 @@ const KmtStopEta = (props: KmbStopEtaProps) => {
             .sort((a, b) => (a.eta! > b.eta! ? 1 : -1))
             .map((eta) => (
               <Card
-                key={`eta-${eta.co}-${eta.route}-${eta.service_type}-${eta.dir}-${eta.eta_seq}`}
+                key={`eta-${eta.co}-${eta.route}-${eta.service_type}-${eta.dir}-${eta.eta_seq}-${eta.eta}`}
               >
                 <CardBody>
                   <Stack>

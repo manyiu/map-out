@@ -108,7 +108,7 @@ const GmbStopEta = (props: GmbStopEtaProps) => {
             )
             .map((eta) => (
               <Card
-                key={`eta-gmb-${eta.route_id}-${eta.route_seq}-${eta.eta_seq}`}
+                key={`eta-gmb-${eta.route_id}-${eta.route_seq}-${eta.eta_seq}-${eta.timestamp}`}
               >
                 <CardBody>
                   <Stack>

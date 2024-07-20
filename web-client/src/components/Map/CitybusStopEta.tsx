@@ -107,7 +107,9 @@ const CitybusStopEta = (props: CitybusStopEtaProps) => {
         <ModalCloseButton />
         <ModalBody>
           {data.map((eta) => (
-            <Card key={`eta-${eta.co}-${eta.route}-${eta.dir}-${eta.eta_seq}`}>
+            <Card
+              key={`eta-${eta.co}-${eta.route}-${eta.dir}-${eta.eta_seq}-${eta.eta}`}
+            >
               <CardBody>
                 <Stack>
                   <HStack>
