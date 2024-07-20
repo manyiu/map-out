@@ -1,0 +1,92 @@
+name: Map Out Stack
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/map-out-stack.yml
+      - lambda/**
+      - lib/**
+      - web-client/**
+
+env:
+  CDK_DEFAULT_ACCOUNT: ${{ vars.CDK_DEFAULT_ACCOUNT }}
+  CDK_DEFAULT_REGION: ${{ vars.CDK_DEFAULT_REGION }}
+  CDK_ROLE_TO_ASSUME: ${{ vars.CDK_ROLE_TO_ASSUME }}
+  HOST_ZONE: ${{ vars.HOST_ZONE }}
+  GITHUB_REF_NAME: ${{ github.ref_name }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm install
+      - name: Run tests
+        run: npm test
+      - name: Install Rust Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install Zig
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: master
+      - name: Install Cargo Lambda
+        uses: jaxxstorm/action-install-gh-release@v1.9.0
+        with:
+          repo: cargo-lambda/cargo-lambda
+          platform: linux
+          arch: x86_64
+      - name: Cache Rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo
+            ./lambdas/api-get-data-update/target
+            ./lambdas/copy-raw-to-processing/target
+            ./lambdas/crawl-citybus-route-stop/target
+            ./lambdas/crawl-gmb-route-stop/target
+            ./lambdas/crawl-gmb-stop/target
+            ./lambdas/empty-processing-bucket/target
+            ./lambdas/generic-crawler/target
+            ./lambdas/init-data-update/target
+            ./lambdas/release-data-pack/target
+            ./lambdas/start-etl-job/target
+          key: ${{ runner.os }}-rust
+          restore-keys: |
+            ${{ runner.os }}-rust
+      - name: Setup AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: $CDK_ROLE_TO_ASSUME
+          aws-region: $CDK_DEFAULT_REGION
+      - name: Create Frontend Distribution Folder
+        run: mkdir -p web-client/dist
+      - name: Install frontend dependencies
+        working-directory: web-client
+        run: npm install
+      - name: Synthesize the backend stack
+        run: npm run cdk synth MapOutBackendStack-$GITHUB_REF_NAME
+      - name: Deploy the backend stack
+        run: npm run cdk deploy --require-approval never --no-rollback --outputs-file ./web-client/src/amplify/cdk-output.json MapOutBackendStack-$GITHUB_REF_NAME
+      - name: Build the frontend
+        working-directory: web-client
+        run: npm run build
+      - name: Synthesize the frontend stack
+        run: npm run cdk synth MapOutWebClientStack-$GITHUB_REF_NAME
+      - name: Deploy the frontend stack
+        run: npm run cdk deploy --require-approval never MapOutWebClientStack-$GITHUB_REF_NAME
