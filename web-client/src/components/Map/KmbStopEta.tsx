@@ -16,6 +16,7 @@ import {
   Tag,
   Text,
 } from "@chakra-ui/react";
+import { KmbStopEta } from "../../api/types";
 import useKmbStopEta from "../../hooks/useKmbStopEta";
 import { StopKmb } from "../../repositories/types";
 import { usePreferenceStore } from "../../stores/preference";
@@ -107,8 +108,35 @@ const KmtStopEta = (props: KmbStopEtaProps) => {
         <ModalCloseButton />
         <ModalBody>
           {data
-            ?.filter((eta) => !!eta.eta)
-            .sort((a, b) => (a.eta! > b.eta! ? 1 : -1))
+            ?.reduce(
+              (acc, curr) => {
+                const newAcc = {
+                  exists: { ...acc.exists },
+                  filtered: [...acc.filtered],
+                };
+
+                if (
+                  curr.eta &&
+                  !acc.exists[`${curr.route}-${curr.dir}-${curr.eta_seq}`]
+                ) {
+                  newAcc.exists[`${curr.route}-${curr.dir}-${curr.eta_seq}`] =
+                    true;
+                  newAcc.filtered.push(curr);
+                }
+
+                return newAcc;
+              },
+              {
+                exists: {},
+                filtered: [],
+              } as {
+                exists: {
+                  [key: string]: boolean;
+                };
+                filtered: KmbStopEta[];
+              }
+            )
+            .filtered.sort((a, b) => (a.eta! > b.eta! ? 1 : -1))
             .map((eta) => (
               <Card
                 key={`eta-${eta.co}-${eta.route}-${eta.service_type}-${eta.dir}-${eta.eta_seq}-${eta.eta}`}

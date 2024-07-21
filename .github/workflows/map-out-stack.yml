@@ -91,4 +91,4 @@ jobs:
       - name: Synthesize the frontend stack
         run: npm run cdk synth MapOutWebClientStack-${{ env.GITHUB_REF_NAME }}
       - name: Deploy the frontend stack
-        run: npm run cdk deploy --require-approval never MapOutWebClientStack-${{ env.GITHUB_REF_NAME }}
+        run: npm run deploy:frontend:main

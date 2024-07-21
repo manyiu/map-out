@@ -106,29 +106,31 @@ const CitybusStopEta = (props: CitybusStopEtaProps) => {
         <ModalHeader>{props.stop?.[`name_${language}`]}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          {data.map((eta) => (
-            <Card
-              key={`eta-${eta.co}-${eta.route}-${eta.dir}-${eta.eta_seq}-${eta.eta}`}
-            >
-              <CardBody>
-                <Stack>
-                  <HStack>
-                    <Badge variant="outline" colorScheme="yellow">
-                      <Text fontSize="large">{eta.route}</Text>
-                    </Badge>
-                    <Tag>{eta?.[`dest_${language}`]}</Tag>
-                  </HStack>
-                  <HStack>
-                    {eta[`rmk_${language}`] && (
-                      <Kbd>{eta[`rmk_${language}`]}</Kbd>
-                    )}
-                    <TimeIcon />
-                    <Countdown eta={eta.eta!} />
-                  </HStack>
-                </Stack>
-              </CardBody>
-            </Card>
-          ))}
+          {data
+            .filter((eta) => !!eta.eta)
+            .map((eta) => (
+              <Card
+                key={`eta-${eta.co}-${eta.route}-${eta.dir}-${eta.eta_seq}-${eta.eta}`}
+              >
+                <CardBody>
+                  <Stack>
+                    <HStack>
+                      <Badge variant="outline" colorScheme="yellow">
+                        <Text fontSize="large">{eta.route}</Text>
+                      </Badge>
+                      <Tag>{eta?.[`dest_${language}`]}</Tag>
+                    </HStack>
+                    <HStack>
+                      {eta[`rmk_${language}`] && (
+                        <Kbd>{eta[`rmk_${language}`]}</Kbd>
+                      )}
+                      <TimeIcon />
+                      <Countdown eta={eta.eta!} />
+                    </HStack>
+                  </Stack>
+                </CardBody>
+              </Card>
+            ))}
         </ModalBody>
       </ModalContent>
     </Modal>
