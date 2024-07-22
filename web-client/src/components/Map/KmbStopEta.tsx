@@ -34,7 +34,7 @@ const KmtStopEta = (props: KmbStopEtaProps) => {
   const language = usePreferenceStore((state) => state.language);
 
   const { data, isLoading, isError } = useKmbStopEta(
-    props.isOpen ? props.stop?.stop || null : null
+    props.isOpen && props.stop?.stop ? [props.stop.stop] : null
   );
 
   if (isError) {

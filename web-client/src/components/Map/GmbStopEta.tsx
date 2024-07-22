@@ -33,7 +33,7 @@ interface GmbStopEtaProps {
 const GmbStopEta = (props: GmbStopEtaProps) => {
   const [routes, setRoutes] = useState<{ [key: string]: GmbRoute }>({});
   const { data, isLoading } = useGmbStopEta(
-    props.isOpen ? props.stop?.stop || null : null
+    props.isOpen && props.stop?.stop ? [props.stop.stop] : null
   );
   const language = usePreferenceStore((state) => state.language);
 
@@ -70,26 +70,7 @@ const GmbStopEta = (props: GmbStopEtaProps) => {
     return null;
   }
 
-  const flattenData = [];
-
-  for (const routeEta of data || []) {
-    for (const eta of routeEta.eta) {
-      flattenData.push({
-        route_id: routeEta.route_id,
-        route_seq: routeEta.route_seq,
-        stop_seq: eta.eta_seq,
-        enabled: routeEta.enabled,
-        eta_seq: eta.eta_seq,
-        diff: eta.diff,
-        timestamp: eta.timestamp,
-        remarks_tc: eta.remarks_tc,
-        remarks_sc: eta.remarks_sc,
-        remarks_en: eta.remarks_en,
-      });
-    }
-  }
-
-  if (flattenData.length === 0) {
+  if (data.length === 0) {
     return <NoSchedule isOpen={props.isOpen} onClose={props.onClose} />;
   }
 
@@ -100,7 +81,7 @@ const GmbStopEta = (props: GmbStopEtaProps) => {
         <ModalHeader></ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          {flattenData
+          {data
             .sort(
               (a, b) =>
                 new Date(a.timestamp).getTime() -

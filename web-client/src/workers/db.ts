@@ -591,6 +591,228 @@ const main = async () => {
       }
       //# endregion save gmb stop
 
+      //#region get kmb stop by coordinates
+      if (dataType === "database::get::kmb::get-stop-by-coordinates") {
+        const bounds = {
+          lat: {
+            lower: event.data.data._southWest.lat,
+            upper: event.data.data._northEast.lat,
+          },
+          lng: {
+            lower: event.data.data._southWest.lng,
+            upper: event.data.data._northEast.lng,
+          },
+        };
+
+        const stopKmbSql = `
+          SELECT *
+          FROM StopKmb
+          WHERE lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
+          AND long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
+        `;
+
+        const stopsKmb = db.exec({
+          sql: stopKmbSql,
+          rowMode: "object",
+          returnValue: "resultRows",
+        });
+
+        self.postMessage({
+          type: "result::database::get::kmb::get-stop-by-coordinates",
+          data: stopsKmb,
+        });
+
+        return;
+      }
+      //#endregion get kmb stop by coordinates
+
+      //#region get kmb route by coordinates
+      if (dataType === "database::get::kmb::get-route-by-coordinates") {
+        const latlngBounds = event.data.data;
+
+        const bounds = {
+          lat: {
+            lower: latlngBounds._southWest.lat,
+            upper: latlngBounds._northEast.lat,
+          },
+          lng: {
+            lower: latlngBounds._southWest.lng,
+            upper: latlngBounds._northEast.lng,
+          },
+        };
+
+        const routeKmbSql = `
+          SELECT DISTINCT RouteKmb.*
+          FROM RouteKmb
+          JOIN RouteStopKmb ON RouteKmb.route = RouteStopKmb.route
+          JOIN StopKmb ON RouteStopKmb.stop = StopKmb.stop
+          WHERE StopKmb.lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
+          AND StopKmb.long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
+        `;
+
+        const routesKmb = db.exec({
+          sql: routeKmbSql,
+          rowMode: "object",
+          returnValue: "resultRows",
+        });
+
+        self.postMessage({
+          type: "result::database::get::kmb::get-route-by-coordinates",
+          data: routesKmb,
+        });
+
+        return;
+      }
+      //#endregion get kmb route by coordinates
+
+      //#region get citybus stop by coordinates
+      if (dataType === "database::get::citybus::get-stop-by-coordinates") {
+        const bounds = {
+          lat: {
+            lower: event.data.data._southWest.lat,
+            upper: event.data.data._northEast.lat,
+          },
+          lng: {
+            lower: event.data.data._southWest.lng,
+            upper: event.data.data._northEast.lng,
+          },
+        };
+
+        const stopCitybusSql = `
+          SELECT *
+          FROM StopCitybus
+          WHERE lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
+          AND long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
+        `;
+
+        const stopsCitybus = db.exec({
+          sql: stopCitybusSql,
+          rowMode: "object",
+          returnValue: "resultRows",
+        });
+
+        self.postMessage({
+          type: "result::database::get::citybus::get-stop-by-coordinates",
+          data: stopsCitybus,
+        });
+
+        return;
+      }
+      //#endregion get citybus stop by coordinates
+
+      //#region get citybus route by coordinates
+      if (dataType === "database::get::citybus::get-route-by-coordinates") {
+        const latlngBounds = event.data.data;
+
+        const bounds = {
+          lat: {
+            lower: latlngBounds._southWest.lat,
+            upper: latlngBounds._northEast.lat,
+          },
+          lng: {
+            lower: latlngBounds._southWest.lng,
+            upper: latlngBounds._northEast.lng,
+          },
+        };
+
+        const routeCitybusSql = `
+          SELECT DISTINCT RouteCitybus.*
+          FROM RouteCitybus
+          JOIN RouteStopCitybus ON RouteCitybus.route = RouteStopCitybus.route
+          JOIN StopCitybus ON RouteStopCitybus.stop = StopCitybus.stop
+          WHERE StopCitybus.lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
+          AND StopCitybus.long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
+        `;
+
+        const routesCitybus = db.exec({
+          sql: routeCitybusSql,
+          rowMode: "object",
+          returnValue: "resultRows",
+        });
+
+        self.postMessage({
+          type: "result::database::get::citybus::get-route-by-coordinates",
+          data: routesCitybus,
+        });
+
+        return;
+      }
+      //#endregion get citybus route by coordinates
+
+      //#region get gmb stop by coordinates
+      if (dataType === "database::get::gmb::get-stop-by-coordinates") {
+        const bounds = {
+          lat: {
+            lower: event.data.data._southWest.lat,
+            upper: event.data.data._northEast.lat,
+          },
+          lng: {
+            lower: event.data.data._southWest.lng,
+            upper: event.data.data._northEast.lng,
+          },
+        };
+
+        const stopGmbSql = `
+          SELECT *
+          FROM StopGmb
+          WHERE lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
+          AND long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
+        `;
+
+        const stopsGmb = db.exec({
+          sql: stopGmbSql,
+          rowMode: "object",
+          returnValue: "resultRows",
+        });
+
+        self.postMessage({
+          type: "result::database::get::gmb::get-stop-by-coordinates",
+          data: stopsGmb,
+        });
+
+        return;
+      }
+      //#endregion get gmb stop by coordinates
+
+      //#region get gmb route by coordinates
+      if (dataType === "database::get::gmb::get-route-by-coordinates") {
+        const latlngBounds = event.data.data;
+
+        const bounds = {
+          lat: {
+            lower: latlngBounds._southWest.lat,
+            upper: latlngBounds._northEast.lat,
+          },
+          lng: {
+            lower: latlngBounds._southWest.lng,
+            upper: latlngBounds._northEast.lng,
+          },
+        };
+
+        const routeGmbSql = `
+          SELECT DISTINCT RouteGmb.*
+          FROM RouteGmb
+          JOIN RouteStopGmb ON RouteGmb.route_id = RouteStopGmb.route_id
+          JOIN StopGmb ON RouteStopGmb.stop_id = StopGmb.stop
+          WHERE StopGmb.lat BETWEEN ${bounds.lat.lower} AND ${bounds.lat.upper}
+          AND StopGmb.long BETWEEN ${bounds.lng.lower} AND ${bounds.lng.upper}
+        `;
+
+        const routesGmb = db.exec({
+          sql: routeGmbSql,
+          rowMode: "object",
+          returnValue: "resultRows",
+        });
+
+        self.postMessage({
+          type: "result::database::get::gmb::get-route-by-coordinates",
+          data: routesGmb,
+        });
+
+        return;
+      }
+      //#endregion get gmb route by coordinates
+
       //#region get nearby stops
       if (dataType === "map-bounds") {
         const bounds = {
@@ -723,14 +945,16 @@ const main = async () => {
       //#endregion get nearby stops
 
       //#region get citybus stop route
-      if (dataType === "database::get::citybus::get-route-by-stop") {
-        const stopId = event.data.data as string;
+      if (dataType === "database::get::citybus::get-route-by-stops") {
+        const stopIds = event.data.data as string[];
 
         const sql = `
-          SELECT DISTINCT RouteCitybus.*
+          SELECT DISTINCT RouteCitybus.*, RouteStopCitybus.stop
           FROM RouteCitybus
           JOIN RouteStopCitybus ON RouteCitybus.route = RouteStopCitybus.route
-          WHERE RouteStopCitybus.stop = '${stopId}'
+          WHERE (${stopIds
+            .map((stopId) => `RouteStopCitybus.stop = '${stopId}'`)
+            .join(") OR (")})
         `;
 
         const routes = db.exec({
@@ -740,11 +964,9 @@ const main = async () => {
         });
 
         self.postMessage({
-          type: "result::database::get::citybus::get-route-by-stop",
+          type: "result::database::get::citybus::get-route-by-stops",
           data: routes,
         });
-
-        return;
       }
       //#endregion get citybus stop route
 

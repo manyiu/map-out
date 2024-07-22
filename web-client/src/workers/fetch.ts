@@ -145,10 +145,6 @@ const main = async () => {
           data: routeResponseJson.data,
         } as MessageEventData);
       }
-
-      if (event.data.type === "fetch::gmb") {
-        console.log("fetch::gmb");
-      }
     }
   );
 };
