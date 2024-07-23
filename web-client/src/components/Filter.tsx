@@ -110,7 +110,7 @@ const Filter = () => {
           position: "absolute",
           left: 12,
           bottom: 60,
-          zIndex: 401,
+          zIndex: 1001,
           width: 52,
         }}
       >

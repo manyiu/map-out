@@ -57,7 +57,7 @@ const EtaList = () => {
           position: "absolute",
           left: 12,
           bottom: 110,
-          zIndex: 401,
+          zIndex: 1001,
           width: 52,
         }}
       >

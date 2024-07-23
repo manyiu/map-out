@@ -1,16 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { RvmResponse } from "../api/types";
 import { useBoundsStore } from "../stores/bounds";
+import { useLocationFilterStore } from "../stores/locationFilter";
 
 const useRvm = () => {
+  const rvmFilter = useLocationFilterStore((state) => state.rvm);
   const bounds = useBoundsStore((state) => state.bounds) as {
     _northEast: { lat: number; lng: number };
     _southWest: { lat: number; lng: number };
   } | null;
 
   const { data, isError, isLoading, isFetching } = useQuery({
-    queryKey: ["rvm"],
+    queryKey: ["rvm", rvmFilter],
     queryFn: async () => {
+      if (!rvmFilter) {
+        return [];
+      }
+
       const response = await fetch("https://albarvm.teamnote.work/api/rvm/");
 
       if (!response.ok) {

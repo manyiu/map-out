@@ -85,11 +85,6 @@ const i18n = {
     tc: "上次清空時間",
     sc: "上次清空时间",
   },
-  lastUpdated: {
-    en: "Last Updated",
-    tc: "上次更新時間",
-    sc: "上次更新时间",
-  },
 };
 
 interface RvmProps {
@@ -129,6 +124,21 @@ const Rvm = (props: RvmProps) => {
         return 40;
       case RvmItemStatus["Full"]:
         return 100;
+    }
+  })();
+
+  const fullPercentageColor = (() => {
+    switch (props.rvm?.status) {
+      case RvmItemStatus["<=5%"]:
+        return "red";
+      case RvmItemStatus["<=20%"]:
+        return "orange";
+      case RvmItemStatus["<=40%"]:
+        return "yellow";
+      case RvmItemStatus[">40%"]:
+        return "green";
+      case RvmItemStatus["Full"]:
+        return "red";
     }
   })();
 
@@ -183,7 +193,10 @@ const Rvm = (props: RvmProps) => {
                 <StatNumber>{props.rvm.bin_count}</StatNumber>
                 <StatHelpText>{fullText}</StatHelpText>
               </Stat>
-              <CircularProgress value={fullPercentage}>
+              <CircularProgress
+                value={fullPercentage}
+                color={fullPercentageColor}
+              >
                 <CircularProgressLabel>{fullPercentage}%</CircularProgressLabel>
               </CircularProgress>
               {props.rvm.last_emptied_at && (
@@ -196,12 +209,6 @@ const Rvm = (props: RvmProps) => {
                 <Text>
                   {i18n.lastFull[language]}{" "}
                   {new Date(props.rvm.last_full).toLocaleString()}
-                </Text>
-              )}
-              {props.rvm.last_online && (
-                <Text>
-                  {i18n.lastUpdated[language]}{" "}
-                  {new Date(props.rvm.last_online).toLocaleString()}
                 </Text>
               )}
             </CardBody>
