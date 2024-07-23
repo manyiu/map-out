@@ -9,18 +9,23 @@ import {
 import "leaflet/dist/leaflet.css";
 import { useState } from "react";
 import { MapContainer, Marker, TileLayer } from "react-leaflet";
+import { RvmItem } from "../../api/types";
 import useGeolocation from "../../hooks/useGeolocation";
 import useNearByCitybus from "../../hooks/useNearByCitybus";
 import useNearByGmb from "../../hooks/useNearByGmb";
 import useNearByKmb from "../../hooks/useNearByKmb";
+import useRvm from "../../hooks/useRvm";
 import { GmbStop, StopCitybus, StopKmb } from "../../repositories/types";
+import { useLocationFilterStore } from "../../stores/locationFilter";
 import { usePreferenceStore } from "../../stores/preference";
 import CitybusStopEta from "./CitybusStopEta";
 import GmbStopEta from "./GmbStopEta";
 import CitybusIcon from "./Icons/Citybus";
 import GmbIcon from "./Icons/Gmb";
 import KmbIcon from "./Icons/Kmb";
+import rvmIcon from "./Icons/Rvm";
 import KmbStopEta from "./KmbStopEta";
+import Rvm from "./Rvm";
 import Spy from "./Spy";
 import { Source, SourceAttribution, SourceUrl } from "./types";
 
@@ -43,8 +48,14 @@ const Map = () => {
   const [selectedCitybusStop, setSelectedCitybusStop] =
     useState<StopCitybus | null>(null);
   const [selectedGmbStop, setSelectedGmbStop] = useState<GmbStop | null>(null);
+  const [selectedRvm, setSelectedRvm] = useState<RvmItem | null>(null);
   const language = usePreferenceStore((state) => state.language);
   const source = usePreferenceStore((state) => state.source);
+  const kmbFilter = useLocationFilterStore((state) => state.kmb);
+  const citybusFilter = useLocationFilterStore((state) => state.citybus);
+  const gmbFilter = useLocationFilterStore((state) => state.gmb);
+  const rvmFilter = useLocationFilterStore((state) => state.rvm);
+  useRvm();
 
   const {
     isOpen: isKmbOpen,
@@ -68,6 +79,7 @@ const Map = () => {
   const { stop: stopKmb } = useNearByKmb();
   const { stop: stopCitybus } = useNearByCitybus();
   const { stop: stopGmb } = useNearByGmb();
+  const { data: rvm } = useRvm();
 
   if (!geolocation) {
     return (
@@ -108,6 +120,13 @@ const Map = () => {
         onClose={onGmbClose}
       />
 
+      <Rvm
+        rvm={selectedRvm}
+        isOpen={!!selectedRvm}
+        onOpen={() => {}}
+        onClose={() => setSelectedRvm(null)}
+      />
+
       <MapContainer
         style={{ height: "100dvh", width: "100%" }}
         center={[geolocation?.coords.latitude, geolocation?.coords.longitude]}
@@ -130,45 +149,61 @@ const Map = () => {
             crossOrigin={"anonymous"}
           />
         )}
-        {stopKmb.map((stop) => (
-          <Marker
-            key={stop.stop}
-            position={[stop.lat, stop.long]}
-            icon={KmbIcon}
-            eventHandlers={{
-              click: () => {
-                setSelectedKmbStop(stop);
-                onKmbOpen();
-              },
-            }}
-          ></Marker>
-        ))}
-        {stopCitybus.map((stop) => (
-          <Marker
-            key={stop.stop}
-            position={[stop.lat, stop.long]}
-            icon={CitybusIcon}
-            eventHandlers={{
-              click: () => {
-                setSelectedCitybusStop(stop);
-                onCitybusOpen();
-              },
-            }}
-          ></Marker>
-        ))}
-        {stopGmb.map((stop) => (
-          <Marker
-            key={stop.stop}
-            position={[stop.lat, stop.long]}
-            icon={GmbIcon}
-            eventHandlers={{
-              click: () => {
-                setSelectedGmbStop(stop);
-                onGmbOpen();
-              },
-            }}
-          ></Marker>
-        ))}
+        {kmbFilter &&
+          stopKmb.map((stop) => (
+            <Marker
+              key={stop.stop}
+              position={[stop.lat, stop.long]}
+              icon={KmbIcon}
+              eventHandlers={{
+                click: () => {
+                  setSelectedKmbStop(stop);
+                  onKmbOpen();
+                },
+              }}
+            ></Marker>
+          ))}
+        {citybusFilter &&
+          stopCitybus.map((stop) => (
+            <Marker
+              key={stop.stop}
+              position={[stop.lat, stop.long]}
+              icon={CitybusIcon}
+              eventHandlers={{
+                click: () => {
+                  setSelectedCitybusStop(stop);
+                  onCitybusOpen();
+                },
+              }}
+            ></Marker>
+          ))}
+        {gmbFilter &&
+          stopGmb.map((stop) => (
+            <Marker
+              key={stop.stop}
+              position={[stop.lat, stop.long]}
+              icon={GmbIcon}
+              eventHandlers={{
+                click: () => {
+                  setSelectedGmbStop(stop);
+                  onGmbOpen();
+                },
+              }}
+            ></Marker>
+          ))}
+        {rvmFilter &&
+          rvm?.map((item) => (
+            <Marker
+              key={item.id}
+              position={[item.coordinates[0], item.coordinates[1]]}
+              icon={rvmIcon}
+              eventHandlers={{
+                click: () => {
+                  setSelectedRvm(item);
+                },
+              }}
+            ></Marker>
+          ))}
       </MapContainer>
     </>
   );

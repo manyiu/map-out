@@ -1,5 +1,5 @@
 import { useToast } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePreferenceStore } from "../stores/preference";
 import { dbWorker, fetchWorker } from "../workers";
 
@@ -21,13 +21,16 @@ const useDatabase = () => {
   const [ready, setReady] = useState(false);
   const language = usePreferenceStore((state) => state.language);
   const toast = useToast();
+  const toastMemo = useMemo(() => toast, [toast]);
 
   useEffect(() => {
-    const intervalId = setInterval(() => {
+    const pingIntervalId = setInterval(() => {
       dbWorker.postMessage({
         type: "ping",
       });
     }, 1000);
+
+    let checkEmptyIntervalId: NodeJS.Timeout;
 
     const fetchEventListener = (event: MessageEvent) => {
       switch (event.data.type) {
@@ -47,7 +50,10 @@ const useDatabase = () => {
 
     const dbEventListener = (event: MessageEvent) => {
       if (event.data.type === "pong") {
-        clearInterval(intervalId);
+        clearInterval(pingIntervalId);
+        checkEmptyIntervalId = setInterval(() => {
+          dbWorker.postMessage({ type: "database::check-empty" });
+        }, 3000);
         dbWorker.postMessage({ type: "database::check-empty" });
         setUp(true);
       }
@@ -55,6 +61,7 @@ const useDatabase = () => {
       if (event.data.type === "result::database::check-empty") {
         if (event.data.data) {
           fetchWorker.postMessage({ type: "fetch::update" });
+          clearInterval(checkEmptyIntervalId);
         } else {
           setReady(true);
         }
@@ -65,7 +72,7 @@ const useDatabase = () => {
           type: "fetch::update",
         });
 
-        toast({
+        toastMemo({
           title: i18n.databaseResetTitle[language],
           description: i18n.databaseResetDescription[language],
           status: "success",
@@ -79,11 +86,12 @@ const useDatabase = () => {
     dbWorker.addEventListener("message", dbEventListener);
 
     return () => {
-      clearInterval(intervalId);
+      clearInterval(pingIntervalId);
+      clearInterval(checkEmptyIntervalId);
       fetchWorker.removeEventListener("message", fetchEventListener);
       dbWorker.removeEventListener("message", dbEventListener);
     };
-  }, []);
+  }, [language, toastMemo]);
 
   return { up, ready, setReady };
 };

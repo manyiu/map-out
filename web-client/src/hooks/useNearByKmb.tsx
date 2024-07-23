@@ -27,15 +27,17 @@ const useNearByKmb = () => {
 
     dbWorker.addEventListener("message", eventListener);
 
-    dbWorker.postMessage({
-      type: "database::get::kmb::get-stop-by-coordinates",
-      data: bounds,
-    });
+    if (bounds) {
+      dbWorker.postMessage({
+        type: "database::get::kmb::get-stop-by-coordinates",
+        data: bounds,
+      });
 
-    dbWorker.postMessage({
-      type: "database::get::kmb::get-route-by-coordinates",
-      data: bounds,
-    });
+      dbWorker.postMessage({
+        type: "database::get::kmb::get-route-by-coordinates",
+        data: bounds,
+      });
+    }
 
     return () => {
       dbWorker.removeEventListener("message", eventListener);

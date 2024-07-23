@@ -13,7 +13,7 @@ export enum Mode {
   List = "list",
 }
 
-export interface Preference {
+interface Preference {
   language: Language;
   source: Source;
   mode: Mode;

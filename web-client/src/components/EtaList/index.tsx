@@ -56,7 +56,7 @@ const EtaList = () => {
         style={{
           position: "absolute",
           left: 12,
-          bottom: 60,
+          bottom: 110,
           zIndex: 401,
           width: 52,
         }}

@@ -27,22 +27,27 @@ const useNearByCitybus = () => {
 
     dbWorker.addEventListener("message", eventListener);
 
-    dbWorker.postMessage({
-      type: "database::get::citybus::get-stop-by-coordinates",
-      data: bounds,
-    });
+    if (bounds) {
+      dbWorker.postMessage({
+        type: "database::get::citybus::get-stop-by-coordinates",
+        data: bounds,
+      });
 
-    dbWorker.postMessage({
-      type: "database::get::citybus::get-route-by-coordinates",
-      data: bounds,
-    });
+      dbWorker.postMessage({
+        type: "database::get::citybus::get-route-by-coordinates",
+        data: bounds,
+      });
+    }
 
     return () => {
       dbWorker.removeEventListener("message", eventListener);
     };
   }, [bounds]);
 
-  return { stop, route };
+  return {
+    stop,
+    route,
+  };
 };
 
 export default useNearByCitybus;
