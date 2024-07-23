@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useMapEvents } from "react-leaflet";
-import { useBoundsStore } from "../../stores/bounds";
+import { useMapStore } from "../../stores/map";
 import { dbWorker } from "../../workers";
 
 interface SpyProps {
@@ -8,24 +8,16 @@ interface SpyProps {
 }
 
 const Spy = ({ ready }: SpyProps) => {
-  const setBounds = useBoundsStore((state) => state.setBounds);
+  const setBounds = useMapStore((state) => state.setBounds);
+  const setZoom = useMapStore((state) => state.setZoom);
 
   const map = useMapEvents({
     dragend: () => {
       setBounds(map.getBounds());
-
-      dbWorker.postMessage({
-        type: "map-bounds",
-        data: map.getBounds(),
-      });
     },
     zoomend: () => {
       setBounds(map.getBounds());
-
-      dbWorker.postMessage({
-        type: "map-bounds",
-        data: map.getBounds(),
-      });
+      setZoom(map.getZoom());
     },
   });
 

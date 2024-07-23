@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { GmbRoute, GmbStop } from "../repositories/types";
-import { useBoundsStore } from "../stores/bounds";
+import { useMapStore } from "../stores/map";
+import { usePreferenceStore } from "../stores/preference";
 import { dbWorker } from "../workers";
 
 const useNearByGmb = () => {
-  const bounds = useBoundsStore((state) => state.bounds);
+  const bounds = useMapStore((state) => state.bounds);
+  const zoom = useMapStore((state) => state.zoom);
+  const minDisplayZoom = usePreferenceStore((state) => state.minDisplayZoom);
   const [stop, setStop] = useState<GmbStop[]>([]);
   const [route, setRoute] = useState<GmbRoute[]>([]);
 
@@ -44,7 +47,10 @@ const useNearByGmb = () => {
     };
   }, [bounds]);
 
-  return { stop, route };
+  return {
+    stop: minDisplayZoom <= zoom ? stop : [],
+    route: minDisplayZoom <= zoom ? route : [],
+  };
 };
 
 export default useNearByGmb;

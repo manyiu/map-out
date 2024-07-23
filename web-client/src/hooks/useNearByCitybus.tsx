@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { RouteCitybus, StopCitybus } from "../repositories/types";
-import { useBoundsStore } from "../stores/bounds";
+import { useMapStore } from "../stores/map";
+import { usePreferenceStore } from "../stores/preference";
 import { dbWorker } from "../workers";
 
 const useNearByCitybus = () => {
-  const bounds = useBoundsStore((state) => state.bounds);
+  const bounds = useMapStore((state) => state.bounds);
+  const zoom = useMapStore((state) => state.zoom);
+  const minDisplayZoom = usePreferenceStore((state) => state.minDisplayZoom);
   const [stop, setStop] = useState<StopCitybus[]>([]);
   const [route, setRoute] = useState<RouteCitybus[]>([]);
 
@@ -45,8 +48,8 @@ const useNearByCitybus = () => {
   }, [bounds]);
 
   return {
-    stop,
-    route,
+    stop: minDisplayZoom <= zoom ? stop : [],
+    route: minDisplayZoom <= zoom ? route : [],
   };
 };
 

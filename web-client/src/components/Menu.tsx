@@ -1,5 +1,10 @@
 import { ChevronLeftIcon, SettingsIcon } from "@chakra-ui/icons";
 import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Box,
   Button,
   Card,
@@ -7,6 +12,7 @@ import {
   CardFooter,
   CardHeader,
   Center,
+  Divider,
   FormControl,
   FormHelperText,
   FormLabel,
@@ -53,7 +59,7 @@ const i18n = {
   refetchInterval: {
     en: "Refetch Interval (in second)",
     sc: "刷新间隔（秒）",
-    tc: "刷新間隔（秒）",
+    tc: "更新間隔（秒）",
   },
   refetchIntervalHelperText: {
     en: "Setting the value too low may cause your device to be banned from the server",
@@ -80,6 +86,26 @@ const i18n = {
     sc: "地政总署影像地图",
     tc: "地政總署影像地圖",
   },
+  advancedSettings: {
+    en: "Advanced Settings",
+    sc: "高级设置",
+    tc: "高級設置",
+  },
+  advancedSettingsHelperText: {
+    en: "These settings are for advanced users only. Changing them may cause the app work improperly.",
+    sc: "这些设置仅供高级用户使用。更改这些设置可能会导致应用程序无法正常工作。",
+    tc: "這些設置僅供高級用戶使用。更改這些設置可能會導致應用程序無法正常工作。",
+  },
+  minDisplayZoomLevel: {
+    en: "Minimum Zoom Level to Display Information",
+    sc: "显示信息的最小缩放级别",
+    tc: "顯示信息的最小縮放級別",
+  },
+  minDisplayZoomLevelHelperText: {
+    en: "Set the minimum zoom level to display information. If the current zoom level is lower than this value, the information will not be displayed.",
+    sc: "设置显示信息的最小缩放级别。如果当前缩放级别低于此值，则不会显示信息。",
+    tc: "設置顯示信息的最小縮放級別。如果當前縮放級別低於此值，則不會顯示信息。",
+  },
   databaseReset: {
     en: "Reset Database",
     sc: "重置数据库",
@@ -97,12 +123,17 @@ const Menu = () => {
   const language = usePreferenceStore((state) => state.language);
   const source = usePreferenceStore((state) => state.source);
   const refetchInterval = usePreferenceStore((state) => state.refetchInterval);
+  const minDisplayZoom = usePreferenceStore((state) => state.minDisplayZoom);
   const setLanguage = usePreferenceStore((state) => state.setLanguage);
   const setSource = usePreferenceStore((state) => state.setSource);
   const setRefetchInterval = usePreferenceStore(
     (state) => state.setRefetchInterval
   );
+  const setMinDisplayZoom = usePreferenceStore(
+    (state) => state.setMinDisplayZoom
+  );
   const { colorMode, toggleColorMode } = useColorMode();
+
   const resetHandler = () => {
     dbWorker.postMessage({
       type: "database::reset",
@@ -197,19 +228,54 @@ const Menu = () => {
                   </Stack>
                 </RadioGroup>
               </Box>
-              <Box>
-                <FormControl>
-                  <Center>
-                    <Button onClick={resetHandler} colorScheme="red">
-                      {i18n.databaseReset[language]}
-                    </Button>
-                  </Center>
-                  <FormHelperText>
-                    {i18n.databaseResetHelperText[language]}
-                  </FormHelperText>
-                </FormControl>
-              </Box>
             </Stack>
+            <Accordion allowToggle mt={4}>
+              <AccordionItem>
+                <AccordionButton>
+                  <Stack>
+                    <Text>{i18n.advancedSettings[language]}</Text>
+                    <Text fontSize="sm">
+                      {i18n.advancedSettingsHelperText[language]}
+                    </Text>
+                  </Stack>
+                  <AccordionIcon />
+                </AccordionButton>
+                <AccordionPanel>
+                  <Divider mb={4} />
+                  <Stack divider={<StackDivider />} spacing={4}>
+                    <FormControl>
+                      <FormLabel>
+                        {i18n.minDisplayZoomLevel[language]}
+                      </FormLabel>
+                      <NumberInput
+                        defaultValue={minDisplayZoom}
+                        max={18}
+                        onChange={(value) => setMinDisplayZoom(parseInt(value))}
+                      >
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                      <FormHelperText>
+                        {i18n.minDisplayZoomLevelHelperText[language]}
+                      </FormHelperText>
+                    </FormControl>
+                    <FormControl>
+                      <Center>
+                        <Button onClick={resetHandler} colorScheme="red">
+                          {i18n.databaseReset[language]}
+                        </Button>
+                      </Center>
+                      <FormHelperText>
+                        {i18n.databaseResetHelperText[language]}
+                      </FormHelperText>
+                    </FormControl>
+                  </Stack>
+                </AccordionPanel>
+              </AccordionItem>
+            </Accordion>
           </CardBody>
           <CardFooter>
             <Text>© 2024 Vazue</Text>

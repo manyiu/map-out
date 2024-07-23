@@ -28,6 +28,7 @@ import KmbStopEta from "./KmbStopEta";
 import Rvm from "./Rvm";
 import Spy from "./Spy";
 import { Source, SourceAttribution, SourceUrl } from "./types";
+import ZoomAlert from "./ZoomAlert";
 
 const i18n = {
   loading: {
@@ -55,7 +56,6 @@ const Map = () => {
   const citybusFilter = useLocationFilterStore((state) => state.citybus);
   const gmbFilter = useLocationFilterStore((state) => state.gmb);
   const rvmFilter = useLocationFilterStore((state) => state.rvm);
-  useRvm();
 
   const {
     isOpen: isKmbOpen,
@@ -99,6 +99,7 @@ const Map = () => {
 
   return (
     <>
+      <ZoomAlert />
       <KmbStopEta
         stop={selectedKmbStop}
         isOpen={isKmbOpen}

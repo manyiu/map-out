@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { RvmResponse } from "../api/types";
-import { useBoundsStore } from "../stores/bounds";
 import { useLocationFilterStore } from "../stores/locationFilter";
+import { useMapStore } from "../stores/map";
 
 const useRvm = () => {
   const rvmFilter = useLocationFilterStore((state) => state.rvm);
-  const bounds = useBoundsStore((state) => state.bounds) as {
+  const bounds = useMapStore((state) => state.bounds) as {
     _northEast: { lat: number; lng: number };
     _southWest: { lat: number; lng: number };
   } | null;
