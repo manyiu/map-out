@@ -23,10 +23,10 @@ const ZoomAlert = () => {
         style={{
           width: "fit-content",
           position: "absolute",
-          top: "50%",
+          top: "20%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          zIndex: 401,
+          zIndex: 1001,
         }}
       >
         <AlertIcon />
