@@ -117,6 +117,7 @@ export class MapOutWebClientStack extends cdk.Stack {
           `${subdomainPrefix}map-out.${existingHostedZone.zoneName}`,
         ],
         certificate: hostingCertificate,
+        httpVersion: cdk.aws_cloudfront.HttpVersion.HTTP2_AND_3,
         defaultRootObject: "index.html",
         errorResponses: [
           {
